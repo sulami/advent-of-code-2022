@@ -4,12 +4,12 @@ pub fn solve() {
     let input = include_str!("../inputs/08.txt");
     let trees: Map = input.parse().expect("invalid map");
     let part1 = (0..trees.len()).filter(|&idx| trees.visible(idx)).count();
-    println!("day 7-1: {}", part1);
+    println!("day 8-1: {}", part1);
     let part2 = (0..trees.len())
         .map(|idx| trees.scenic_score(idx))
         .max()
         .unwrap();
-    println!("day 7-2: {}", part2);
+    println!("day 8-2: {}", part2);
 }
 
 #[derive(Debug)]
