@@ -13,7 +13,7 @@ pub fn solve() {
             "C X" => 1 + 6,
             "C Y" => 2 + 0,
             "C Z" => 3 + 3,
-            _ => panic!("oh no"),
+            _ => panic!("invalid play"),
         }
     };
 
@@ -28,7 +28,7 @@ pub fn solve() {
             "C X" => 2 + 0,
             "C Y" => 3 + 3,
             "C Z" => 1 + 6,
-            _ => panic!("oh no"),
+            _ => panic!("invalid play"),
         }
     };
 
