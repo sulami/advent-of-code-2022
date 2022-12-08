@@ -2,14 +2,21 @@ use std::str::FromStr;
 
 pub fn solve() {
     let input = include_str!("../inputs/08.txt");
+    println!("day 8-1: {}", part1(input));
+    println!("day 8-2: {}", part2(input));
+}
+
+fn part1(input: &str) -> usize {
     let trees: Map = input.parse().expect("invalid map");
-    let part1 = (0..trees.len()).filter(|&idx| trees.visible(idx)).count();
-    println!("day 8-1: {}", part1);
-    let part2 = (0..trees.len())
+    (0..trees.len()).filter(|&idx| trees.visible(idx)).count()
+}
+
+fn part2(input: &str) -> u32 {
+    let trees: Map = input.parse().expect("invalid map");
+    (0..trees.len())
         .map(|idx| trees.scenic_score(idx))
         .max()
-        .unwrap();
-    println!("day 8-2: {}", part2);
+        .unwrap()
 }
 
 #[derive(Debug)]
@@ -124,5 +131,27 @@ impl Map {
         let up = view_distance(&mut self.inner.iter().skip(x).step_by(self.size).take(y).rev());
         let down = view_distance(&mut self.inner.iter().skip(x).step_by(self.size).skip(y + 1));
         left * right * up * down
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    static INPUT: &str = "\
+30373
+25512
+65332
+33549
+35390";
+
+    #[test]
+    fn part1_example() {
+        assert_eq!(part1(&INPUT), 21);
+    }
+
+    #[test]
+    fn part2_example() {
+        assert_eq!(part2(&INPUT), 8);
     }
 }
