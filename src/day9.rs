@@ -58,56 +58,28 @@ impl Rope {
 
     fn move_tail(&mut self) {
         let (x, y) = distance(self.head, self.tail);
-        if x.abs() > 1 || y.abs() > 1 {
-            if x == 0 {
-                // Direct vertical move.
-                if y > 0 {
-                    self.tail.1 += 1;
-                } else {
-                    self.tail.1 -= 1;
-                }
-            } else if y == 0 {
-                // Direct horizontal move.
-                if x > 0 {
-                    self.tail.0 += 1;
-                } else {
-                    self.tail.0 -= 1;
-                }
-            } else if x > 1 {
-                // Diagonally to the right.
-                self.tail.0 += 1;
-                if y > 0 {
-                    self.tail.1 += 1;
-                } else {
-                    self.tail.1 -= 1;
-                }
-            } else if x < 1 {
-                // Diagonally to the left.
-                self.tail.0 -= 1;
-                if y > 0 {
-                    self.tail.1 += 1;
-                } else {
-                    self.tail.1 -= 1;
-                }
-            } else if y > 1 {
-                // Diagonally up.
-                self.tail.1 += 1;
-                if x > 0 {
-                    self.tail.0 += 1;
-                } else {
-                    self.tail.0 -= 1;
-                }
-            } else if y < 1 {
-                // Diagonally down.
-                self.tail.1 -= 1;
-                if x > 0 {
-                    self.tail.0 += 1;
-                } else {
-                    self.tail.0 -= 1;
-                }
-            }
-            self.tail_history.insert(self.tail);
+        if x.abs() + y.abs() > 2 {
+            // Off in more than one direction, need to move diagnoally.
+            self.tail.0 += if x > 0 {
+                (x - 1).max(1)
+            } else {
+                (x + 1).min(-1)
+            };
+            self.tail.1 += if y > 0 {
+                (y - 1).max(1)
+            } else {
+                (y + 1).min(-1)
+            };
+        } else if x > 0 {
+            self.tail.0 += x - 1;
+        } else if x < 0 {
+            self.tail.0 += x + 1;
+        } else if y > 0 {
+            self.tail.1 += y - 1;
+        } else if y < 0 {
+            self.tail.1 += y + 1;
         }
+        self.tail_history.insert(self.tail);
     }
 
     fn move_head(&mut self, m: &Move) {
