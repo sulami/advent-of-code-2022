@@ -113,17 +113,19 @@ impl Map {
         let this_tree = self.inner[idx];
 
         let view_distance = |trees: &mut dyn Iterator<Item = &u8>| -> u32 {
-            let mut all = 0;
+            let mut last_tree = 0;
             let view_until = trees
-                // NB This is a slightly clever trick to get the total
-                // size of the iterator before limiting, without
-                // having to collect items or iterate twice in some
-                // way.
-                .inspect(|_| all += 1)
-                .take_while(|&t| *t < this_tree)
+                .take_while(|&t| {
+                    if *t < this_tree {
+                        true
+                    } else {
+                        last_tree = 1;
+                        false
+                    }
+                })
                 .count();
             // Account for +1 unless we can see until the edge.
-            all.min(view_until + 1) as u32
+            (view_until + last_tree) as u32
         };
 
         let left = view_distance(&mut self.inner[self.idx(0, y)..idx].iter().rev());
