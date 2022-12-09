@@ -8,7 +8,7 @@ pub fn solve() {
 }
 
 fn part1(input: &str) -> usize {
-    let mut rope = Rope::new();
+    let mut rope = Rope::new(2);
     input
         .lines()
         .map(|l| l.parse().expect("failed to parse move"))
@@ -16,8 +16,13 @@ fn part1(input: &str) -> usize {
     rope.tail_history.len()
 }
 
-fn part2(_input: &str) -> u32 {
-    0
+fn part2(input: &str) -> usize {
+    let mut rope = Rope::new(10);
+    input
+        .lines()
+        .map(|l| l.parse().expect("failed to parse move"))
+        .for_each(|m| rope.move_head(&m));
+    rope.tail_history.len()
 }
 
 enum Move {
@@ -41,81 +46,114 @@ impl FromStr for Move {
     }
 }
 
+type Knot = (i16, i16);
+
 struct Rope {
-    head: (i16, i16),
-    tail: (i16, i16),
-    tail_history: HashSet<(i16, i16)>,
+    knots: Vec<Knot>,
+    tail_history: HashSet<Knot>,
 }
 
 impl Rope {
-    fn new() -> Self {
+    fn new(num_knots: usize) -> Self {
+        assert!(num_knots > 0);
         Self {
-            head: (0, 0),
-            tail: (0, 0),
+            knots: vec![(0, 0); num_knots],
             tail_history: HashSet::from([(0, 0)]),
         }
     }
 
-    fn move_tail(&mut self) {
-        let (x, y) = distance(self.head, self.tail);
-        if x.abs() + y.abs() > 2 {
-            // Off in more than one direction, need to move diagnoally.
-            self.tail.0 += if x > 0 {
-                (x - 1).max(1)
-            } else {
-                (x + 1).min(-1)
-            };
-            self.tail.1 += if y > 0 {
-                (y - 1).max(1)
-            } else {
-                (y + 1).min(-1)
-            };
-        } else if x > 0 {
-            self.tail.0 += x - 1;
-        } else if x < 0 {
-            self.tail.0 += x + 1;
-        } else if y > 0 {
-            self.tail.1 += y - 1;
-        } else if y < 0 {
-            self.tail.1 += y + 1;
-        }
-        self.tail_history.insert(self.tail);
-    }
-
     fn move_head(&mut self, m: &Move) {
         match m {
-            Move::Up(n) => (0..*n).for_each(|_| {
-                self.head.1 += 1;
-                self.move_tail();
-            }),
-            Move::Down(n) => (0..*n).for_each(|_| {
-                self.head.1 -= 1;
-                self.move_tail();
-            }),
-            Move::Left(n) => (0..*n).for_each(|_| {
-                self.head.0 -= 1;
-                self.move_tail();
-            }),
-            Move::Right(n) => (0..*n).for_each(|_| {
-                self.head.0 += 1;
-                self.move_tail();
-            }),
+            Move::Up(n) => {
+                for _ in 0..*n {
+                    let mut head = self.knots.get_mut(0).unwrap();
+                    head.1 += 1;
+                    for idx in 0..self.knots.len() - 1 {
+                        let head = *self.knots.get(idx).unwrap();
+                        let mut tail = self.knots.get_mut(idx + 1).unwrap();
+                        move_tail(&head, &mut tail);
+                    }
+                    self.tail_history.insert(*self.knots.last().unwrap());
+                }
+            }
+            Move::Down(n) => {
+                for _ in 0..*n {
+                    let mut head = self.knots.get_mut(0).unwrap();
+                    head.1 -= 1;
+                    for idx in 0..self.knots.len() - 1 {
+                        let head = *self.knots.get(idx).unwrap();
+                        let mut tail = self.knots.get_mut(idx + 1).unwrap();
+                        move_tail(&head, &mut tail);
+                    }
+                    self.tail_history.insert(*self.knots.last().unwrap());
+                }
+            }
+            Move::Left(n) => {
+                for _ in 0..*n {
+                    let mut head = self.knots.get_mut(0).unwrap();
+                    head.0 -= 1;
+                    for idx in 0..self.knots.len() - 1 {
+                        let head = *self.knots.get(idx).unwrap();
+                        let mut tail = self.knots.get_mut(idx + 1).unwrap();
+                        move_tail(&head, &mut tail);
+                    }
+                    self.tail_history.insert(*self.knots.last().unwrap());
+                }
+            }
+            Move::Right(n) => {
+                for _ in 0..*n {
+                    let mut head = self.knots.get_mut(0).unwrap();
+                    head.0 += 1;
+                    for idx in 0..self.knots.len() - 1 {
+                        let head = *self.knots.get(idx).unwrap();
+                        let mut tail = self.knots.get_mut(idx + 1).unwrap();
+                        move_tail(&head, &mut tail);
+                    }
+                    self.tail_history.insert(*self.knots.last().unwrap());
+                }
+            }
         }
     }
 }
 
-/// Returns the maximum 4-directional distance. Means overlapping is
-/// 0, off by one is 1, off diagnoally is still 1. Maps directly to
-/// whether the tail needs to move.
-fn distance(head: (i16, i16), tail: (i16, i16)) -> (i16, i16) {
+/// Returns the two-dimensional distance between two knots.
+fn distance(head: Knot, tail: Knot) -> (i16, i16) {
     (head.0 - tail.0, head.1 - tail.1)
+}
+
+/// Moves tail such that it is in a legal position relative to head.
+fn move_tail(head: &Knot, tail: &mut Knot) {
+    let (x, y) = distance(*head, *tail);
+    if x.abs() + y.abs() > 2 {
+        // Off in more than one direction, need to move diagnoally.
+        tail.0 += if x > 0 {
+            (x - 1).max(1)
+        } else {
+            (x + 1).min(-1)
+        };
+        tail.1 += if y > 0 {
+            (y - 1).max(1)
+        } else {
+            (y + 1).min(-1)
+        };
+    } else if x > 0 {
+        tail.0 += x - 1;
+    } else if x < 0 {
+        tail.0 += x + 1;
+    } else if y > 0 {
+        tail.1 += y - 1;
+    } else if y < 0 {
+        tail.1 += y + 1;
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    static INPUT: &str = "\
+    #[test]
+    fn part1_example() {
+        let input = "\
 R 4
 U 4
 L 3
@@ -124,9 +162,20 @@ R 4
 D 1
 L 5
 R 2";
+        assert_eq!(part1(input), 13)
+    }
 
     #[test]
-    fn part1_example() {
-        assert_eq!(part1(INPUT), 13)
+    fn part2_example() {
+        let input = "\
+R 5
+U 8
+L 8
+D 3
+R 17
+D 10
+L 25
+U 20";
+        assert_eq!(part2(input), 36)
     }
 }
