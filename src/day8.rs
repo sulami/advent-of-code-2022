@@ -149,11 +149,11 @@ mod tests {
 
     #[test]
     fn part1_example() {
-        assert_eq!(part1(&INPUT), 21);
+        assert_eq!(part1(INPUT), 21);
     }
 
     #[test]
     fn part2_example() {
-        assert_eq!(part2(&INPUT), 8);
+        assert_eq!(part2(INPUT), 8);
     }
 }
