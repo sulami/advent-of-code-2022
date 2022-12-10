@@ -8,12 +8,15 @@ pub fn solve() {
 
 fn part1(input: &str) -> i16 {
     let mut cpu = CPU::default();
-    let xs: Vec<i16> = input
+    input
         .lines()
         .map(|l| l.parse::<Instruction>().expect("invalid instruction"))
         .flat_map(|i| cpu.run(&i))
-        .collect();
-    20 * xs[19] + 60 * xs[59] + 100 * xs[99] + 140 * xs[139] + 180 * xs[179] + 220 * xs[219]
+        .enumerate()
+        .skip(19)
+        .step_by(40)
+        .map(|(i, x)| (i as i16 + 1) * x)
+        .sum()
 }
 
 fn part2(input: &str) -> String {
