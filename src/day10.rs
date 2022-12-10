@@ -31,11 +31,7 @@ fn part2(input: &str) -> String {
                 } else {
                     "."
                 },
-                if beam != 0 && beam % 40 == 39 {
-                    "\n"
-                } else {
-                    ""
-                }
+                if beam % 40 == 39 { "\n" } else { "" }
             )
         })
         .collect()
