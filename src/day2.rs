@@ -1,8 +1,12 @@
-#[allow(clippy::identity_op)]
 pub fn solve() {
     let input = include_str!("../inputs/02.txt");
+    println!("day 2-1: {}", part1(input));
+    println!("day 2-2: {}", part2(input));
+}
 
-    let part1 = |plays: &str| -> i32 {
+#[allow(clippy::identity_op)]
+fn part1(input: &str) -> i32 {
+    let strategy = |plays: &str| -> i32 {
         match plays {
             "A X" => 1 + 3,
             "A Y" => 2 + 6,
@@ -16,8 +20,12 @@ pub fn solve() {
             _ => panic!("invalid play"),
         }
     };
+    calculate(input, strategy)
+}
 
-    let part2 = |plays: &str| -> i32 {
+#[allow(clippy::identity_op)]
+fn part2(input: &str) -> i32 {
+    let strategy = |plays: &str| -> i32 {
         match plays {
             "A X" => 3 + 0,
             "A Y" => 1 + 3,
@@ -31,9 +39,29 @@ pub fn solve() {
             _ => panic!("invalid play"),
         }
     };
+    calculate(input, strategy)
+}
 
-    let calculate = |i: &str, strategy: fn(&str) -> i32| -> i32 { i.lines().map(strategy).sum() };
+fn calculate(input: &str, strategy: fn(&str) -> i32) -> i32 {
+    input.lines().map(strategy).sum()
+}
 
-    println!("day 2-1: {}", calculate(input, part1));
-    println!("day 2-2: {}", calculate(input, part2));
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const INPUT: &str = "\
+A Y
+B X
+C Z";
+
+    #[test]
+    fn part1_example() {
+        assert_eq!(part1(INPUT), 15);
+    }
+
+    #[test]
+    fn part2_example() {
+        assert_eq!(part2(INPUT), 12);
+    }
 }
