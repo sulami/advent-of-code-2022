@@ -7,11 +7,7 @@ pub fn solve() {
 }
 
 fn part1(input: &str) -> i16 {
-    let mut cpu = CPU::default();
-    input
-        .lines()
-        .map(|l| l.parse::<Instruction>().expect("invalid instruction"))
-        .flat_map(|i| cpu.run(&i))
+    parse_and_run(input)
         .enumerate()
         .skip(19)
         .step_by(40)
@@ -20,11 +16,7 @@ fn part1(input: &str) -> i16 {
 }
 
 fn part2(input: &str) -> String {
-    let mut cpu = CPU::default();
-    input
-        .lines()
-        .map(|l| l.parse::<Instruction>().expect("invalid instruction"))
-        .flat_map(|i| cpu.run(&i))
+    parse_and_run(input)
         .enumerate()
         .map(|(beam, x)| {
             format!(
@@ -38,6 +30,16 @@ fn part2(input: &str) -> String {
             )
         })
         .collect()
+}
+
+/// Parses and runs instructions in input, returning an iterator of X
+/// register values for each CPU cycle.
+fn parse_and_run<'a>(input: &'a str) -> impl Iterator<Item = i16> + 'a {
+    let mut cpu = CPU::default();
+    input
+        .lines()
+        .map(|l| l.parse::<Instruction>().expect("invalid instruction"))
+        .flat_map(move |i| cpu.run(&i))
 }
 
 enum Instruction {
