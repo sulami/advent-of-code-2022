@@ -70,8 +70,8 @@ impl Rope {
                     head.1 += 1;
                     for idx in 0..self.knots.len() - 1 {
                         let head = *self.knots.get(idx).unwrap();
-                        let mut tail = self.knots.get_mut(idx + 1).unwrap();
-                        move_tail(&head, &mut tail);
+                        let tail = self.knots.get_mut(idx + 1).unwrap();
+                        move_tail(&head, tail);
                     }
                     self.tail_history.insert(*self.knots.last().unwrap());
                 }
@@ -82,8 +82,8 @@ impl Rope {
                     head.1 -= 1;
                     for idx in 0..self.knots.len() - 1 {
                         let head = *self.knots.get(idx).unwrap();
-                        let mut tail = self.knots.get_mut(idx + 1).unwrap();
-                        move_tail(&head, &mut tail);
+                        let tail = self.knots.get_mut(idx + 1).unwrap();
+                        move_tail(&head, tail);
                     }
                     self.tail_history.insert(*self.knots.last().unwrap());
                 }
@@ -94,8 +94,8 @@ impl Rope {
                     head.0 -= 1;
                     for idx in 0..self.knots.len() - 1 {
                         let head = *self.knots.get(idx).unwrap();
-                        let mut tail = self.knots.get_mut(idx + 1).unwrap();
-                        move_tail(&head, &mut tail);
+                        let tail = self.knots.get_mut(idx + 1).unwrap();
+                        move_tail(&head, tail);
                     }
                     self.tail_history.insert(*self.knots.last().unwrap());
                 }
@@ -106,8 +106,8 @@ impl Rope {
                     head.0 += 1;
                     for idx in 0..self.knots.len() - 1 {
                         let head = *self.knots.get(idx).unwrap();
-                        let mut tail = self.knots.get_mut(idx + 1).unwrap();
-                        move_tail(&head, &mut tail);
+                        let tail = self.knots.get_mut(idx + 1).unwrap();
+                        move_tail(&head, tail);
                     }
                     self.tail_history.insert(*self.knots.last().unwrap());
                 }

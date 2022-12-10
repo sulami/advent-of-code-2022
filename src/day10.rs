@@ -34,8 +34,8 @@ fn part2(input: &str) -> String {
 
 /// Parses and runs instructions in input, returning an iterator of X
 /// register values for each CPU cycle.
-fn parse_and_run<'a>(input: &'a str) -> impl Iterator<Item = i16> + 'a {
-    let mut cpu = CPU::default();
+fn parse_and_run(input: &str) -> impl Iterator<Item = i16> + '_ {
+    let mut cpu = Cpu::default();
     input
         .lines()
         .map(|l| l.parse::<Instruction>().expect("invalid instruction"))
@@ -62,17 +62,17 @@ impl FromStr for Instruction {
 }
 
 #[derive(Copy, Clone)]
-struct CPU {
+struct Cpu {
     x: i16,
 }
 
-impl Default for CPU {
+impl Default for Cpu {
     fn default() -> Self {
         Self { x: 1 }
     }
 }
 
-impl CPU {
+impl Cpu {
     /// Runs an instruction and returns the values of the x register
     /// during all cycles consumed.
     fn run(&mut self, instruction: &Instruction) -> Vec<i16> {
