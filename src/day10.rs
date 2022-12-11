@@ -91,7 +91,7 @@ impl Cpu {
 mod tests {
     use super::*;
 
-    static INPUT: &str = "\
+    const INPUT: &str = "\
 addx 15
 addx -11
 addx 6
