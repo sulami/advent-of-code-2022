@@ -1,7 +1,7 @@
 use nom::{
     branch::alt,
     bytes::complete::tag,
-    character::complete::{digit1, u128, u8},
+    character::complete::{digit1, u64, u8},
     multi::separated_list1,
     IResult,
 };
@@ -12,7 +12,7 @@ pub fn solve() {
     println!("day 11-2: {}", part2(input));
 }
 
-fn part1(input: &str) -> u128 {
+fn part1(input: &str) -> u64 {
     let mut monkeys: Vec<Monkey> = input
         .split("\n\n")
         .map(|s| parse_monkey(s, false).expect("failed to parse monkey").1)
@@ -27,11 +27,13 @@ fn part1(input: &str) -> u128 {
         .product()
 }
 
-fn part2(input: &str) -> u128 {
+fn part2(input: &str) -> u64 {
     let mut monkeys: Vec<Monkey> = input
         .split("\n\n")
         .map(|s| parse_monkey(s, true).expect("failed to parse monkey").1)
         .collect();
+    let modulo = monkeys.iter().map(|m| m.test).product();
+    monkeys.iter_mut().for_each(|m| m.modulo = modulo);
     (0..10_000).for_each(|_| round(&mut monkeys));
     monkeys.sort_by_key(|m| m.inspections);
     monkeys
@@ -52,24 +54,28 @@ fn round(monkeys: &mut [Monkey]) {
 
 #[derive(Clone, Debug)]
 struct Monkey {
-    items: Vec<u128>,
+    items: Vec<u64>,
     operation: Operation,
-    test: u128,
+    test: u64,
     if_true: usize,
     if_false: usize,
-    inspections: u128,
+    inspections: u64,
     ridiculous: bool,
+    modulo: u64,
 }
 
 impl Monkey {
-    fn turn(&mut self) -> Vec<(u128, usize)> {
-        self.inspections += self.items.len() as u128;
+    fn turn(&mut self) -> Vec<(u64, usize)> {
+        self.inspections += self.items.len() as u64;
         let item_destinations: Vec<_> = self
             .items
             .iter()
             .map(|&item| {
-                let item = self.increase_worry(item);
-                let item = self.decrease_worry(item);
+                let mut item = self.increase_worry(item);
+                item = self.decrease_worry(item);
+                if self.modulo != 0 {
+                    item = item % self.modulo;
+                }
                 let dest = self.item_destination(item);
                 (item, dest)
             })
@@ -78,7 +84,7 @@ impl Monkey {
         item_destinations
     }
 
-    fn increase_worry(&self, item: u128) -> u128 {
+    fn increase_worry(&self, item: u64) -> u64 {
         match self.operation {
             Operation::Plus(OpAmount::Num(n)) => item + n,
             Operation::Plus(OpAmount::Old) => item + item,
@@ -87,7 +93,7 @@ impl Monkey {
         }
     }
 
-    fn decrease_worry(&self, item: u128) -> u128 {
+    fn decrease_worry(&self, item: u64) -> u64 {
         if self.ridiculous {
             item
         } else {
@@ -96,7 +102,7 @@ impl Monkey {
         }
     }
 
-    fn item_destination(&self, item: u128) -> usize {
+    fn item_destination(&self, item: u64) -> usize {
         if item % self.test == 0 {
             self.if_true
         } else {
@@ -114,19 +120,19 @@ enum Operation {
 #[derive(Copy, Clone, Debug)]
 enum OpAmount {
     Old,
-    Num(u128),
+    Num(u64),
 }
 
 fn parse_monkey(i: &str, ridiculous: bool) -> IResult<&str, Monkey> {
     let (i, _) = tag("Monkey ")(i)?;
     let (i, _) = u8(i)?;
     let (i, _) = tag(":\n  Starting items: ")(i)?;
-    let (i, items) = separated_list1(tag(", "), u128)(i)?;
+    let (i, items) = separated_list1(tag(", "), u64)(i)?;
     let (i, _) = tag("\n  Operation: new = old ")(i)?;
     let (i, op) = alt((tag("+ "), tag("* ")))(i)?;
     let (i, op_amount) = alt((digit1, tag("old")))(i)?;
     let (i, _) = tag("\n  Test: divisible by ")(i)?;
-    let (i, test) = u128(i)?;
+    let (i, test) = u64(i)?;
     let (i, _) = tag("\n    If true: throw to monkey ")(i)?;
     let (i, if_true) = u8(i)?;
     let (i, _) = tag("\n    If false: throw to monkey ")(i)?;
@@ -150,6 +156,7 @@ fn parse_monkey(i: &str, ridiculous: bool) -> IResult<&str, Monkey> {
             if_false: if_false as usize,
             inspections: 0,
             ridiculous,
+            modulo: 0,
         },
     ))
 }
