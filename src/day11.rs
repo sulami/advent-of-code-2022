@@ -13,10 +13,7 @@ pub fn solve() {
 }
 
 fn part1(input: &str) -> u64 {
-    let mut monkeys: Vec<Monkey> = input
-        .split("\n\n")
-        .map(|s| parse_monkey(s, false).expect("failed to parse monkey").1)
-        .collect();
+    let mut monkeys = parse_monkeys(input);
     (0..20).for_each(|_| round(&mut monkeys));
     monkeys.sort_by_key(|m| m.inspections);
     monkeys
@@ -28,12 +25,7 @@ fn part1(input: &str) -> u64 {
 }
 
 fn part2(input: &str) -> u64 {
-    let mut monkeys: Vec<Monkey> = input
-        .split("\n\n")
-        .map(|s| parse_monkey(s, true).expect("failed to parse monkey").1)
-        .collect();
-    let modulo = monkeys.iter().map(|m| m.test).product();
-    monkeys.iter_mut().for_each(|m| m.modulo = modulo);
+    let mut monkeys = parse_monkeys(input);
     (0..10_000).for_each(|_| round(&mut monkeys));
     monkeys.sort_by_key(|m| m.inspections);
     monkeys
@@ -42,6 +34,16 @@ fn part2(input: &str) -> u64 {
         .take(2)
         .map(|m| m.inspections)
         .product()
+}
+
+fn parse_monkeys(input: &str) -> Vec<Monkey> {
+    let mut monkeys: Vec<Monkey> = input
+        .split("\n\n")
+        .map(|s| parse_monkey(s, true).expect("failed to parse monkey").1)
+        .collect();
+    let modulo = monkeys.iter().map(|m| m.test).product();
+    monkeys.iter_mut().for_each(|m| m.modulo = modulo);
+    monkeys
 }
 
 fn round(monkeys: &mut [Monkey]) {
