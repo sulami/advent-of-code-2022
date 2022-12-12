@@ -1,4 +1,4 @@
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashSet, VecDeque};
 use std::str::FromStr;
 
 pub fn solve() {
@@ -31,7 +31,7 @@ fn part2(input: &str) -> usize {
 struct Walker<'a> {
     map: &'a Map,
     candidates: VecDeque<Vec<usize>>,
-    best: HashMap<usize, usize>,
+    visited: HashSet<usize>,
 }
 
 impl<'a> Walker<'a> {
@@ -40,11 +40,11 @@ impl<'a> Walker<'a> {
         map.options(start)
             .iter()
             .for_each(|&o| candidates.push_front(vec![o]));
-        let best = HashMap::new();
+        let best = HashSet::new();
         Self {
             map,
             candidates,
-            best,
+            visited: best,
         }
     }
 
@@ -56,15 +56,10 @@ impl<'a> Walker<'a> {
             if self.map.inner[position] == 'E'.into() {
                 return Some(path.len());
             }
-            if let Some(record) = self.best.get(&position) {
-                if record <= &path.len() {
-                    continue;
-                } else {
-                    self.best.insert(position, path.len());
-                }
-            } else {
-                self.best.insert(position, path.len());
+            if self.visited.contains(&position) {
+                continue;
             }
+            self.visited.insert(position);
             self.map
                 .options(position)
                 .iter()
