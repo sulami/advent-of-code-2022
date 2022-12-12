@@ -81,9 +81,6 @@ impl Monkey {
             .map(|&item| {
                 let mut item = self.increase_worry(item);
                 item = self.decrease_worry(item);
-                if self.modulo != 0 {
-                    item = item % self.modulo;
-                }
                 let dest = self.item_destination(item);
                 (item, dest)
             })
@@ -103,7 +100,7 @@ impl Monkey {
 
     fn decrease_worry(&self, item: u64) -> u64 {
         if self.ridiculous {
-            item
+            item % self.modulo
         } else {
             // NB This rounds towards zero, as is required.
             item / 3
