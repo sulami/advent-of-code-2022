@@ -1,3 +1,5 @@
+/// This solves backwards, walking the map from 'E' to 'S'/'a', to
+/// make part 2 much faster.
 use std::collections::{HashSet, VecDeque};
 use std::str::FromStr;
 
@@ -9,42 +11,36 @@ pub fn solve() {
 
 fn part1(input: &str) -> usize {
     let map: Map = input.parse().expect("invalid map");
-    let mut walker = Walker::new(&map, map.start);
+    let mut walker = Walker::new(&map, 'S'.into());
     walker.walk().expect("no route found")
 }
 
 fn part2(input: &str) -> usize {
     let map: Map = input.parse().expect("invalid map");
-    (0..map.inner.len())
-        .filter_map(|idx| {
-            if map.inner[idx] == u32::from('a') {
-                let mut walker = Walker::new(&map, idx);
-                return walker.walk();
-            }
-            None
-        })
-        .min()
-        .expect("no route found")
+    let mut walker = Walker::new(&map, 'a'.into());
+    walker.walk().expect("no route found")
 }
 
 #[derive(Debug)]
 struct Walker<'a> {
+    goal: u32,
     map: &'a Map,
     candidates: VecDeque<Vec<usize>>,
     visited: HashSet<usize>,
 }
 
 impl<'a> Walker<'a> {
-    fn new(map: &'a Map, start: usize) -> Self {
+    fn new(map: &'a Map, goal: u32) -> Self {
         let mut candidates = VecDeque::new();
-        map.options(start)
+        map.options(map.end)
             .iter()
             .for_each(|&o| candidates.push_front(vec![o]));
-        let best = HashSet::new();
+        let visited = HashSet::new();
         Self {
+            goal,
             map,
             candidates,
-            visited: best,
+            visited,
         }
     }
 
@@ -53,7 +49,7 @@ impl<'a> Walker<'a> {
     fn walk(&mut self) -> Option<usize> {
         while let Some(path) = self.candidates.pop_back() {
             let position = *path.last().unwrap();
-            if self.map.inner[position] == 'E'.into() {
+            if self.map.inner[position] == self.goal {
                 return Some(path.len());
             }
             if self.visited.contains(&position) {
@@ -78,17 +74,18 @@ impl<'a> Walker<'a> {
 struct Map {
     inner: Vec<u32>,
     width: usize,
-    start: usize,
+    end: usize,
 }
 
 impl FromStr for Map {
     type Err = &'static str;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let start = s
+        let end = s
             .chars()
-            .position(|c| c == 'S')
-            .ok_or("unable to find start")?;
+            .filter(|c| c.is_alphabetic())
+            .position(|c| c == 'E')
+            .ok_or("unable to find end")?;
         Ok(Map {
             inner: s
                 .chars()
@@ -96,7 +93,7 @@ impl FromStr for Map {
                 .map(|c| c.into())
                 .collect(),
             width: s.lines().nth(0).ok_or("zero width map")?.chars().count(),
-            start,
+            end,
         })
     }
 }
@@ -114,18 +111,20 @@ impl Map {
                 None => false,
                 Some(pos) if pos < 0 => false,
                 Some(pos) if pos as usize >= self.inner.len() => false,
-                Some(_) if this == 'S'.into() => true,
                 Some(pos) => self
                     .inner
                     .get(pos as usize)
                     .map(|&other| {
-                        if other == 'S'.into() {
+                        if other == 'E'.into() {
                             return false;
                         }
-                        if other == 'E'.into() {
-                            return this >= 'y'.into();
+                        if other == 'S'.into() {
+                            return this <= 'b'.into();
                         }
-                        return other <= this + 1;
+                        if this == 'E'.into() {
+                            return other >= 'y'.into();
+                        }
+                        return this <= other + 1;
                     })
                     .unwrap_or(false),
             }
