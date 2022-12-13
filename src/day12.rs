@@ -92,7 +92,7 @@ impl FromStr for Map {
                 .filter(|c| c.is_alphabetic())
                 .map(|c| c.into())
                 .collect(),
-            width: s.lines().nth(0).ok_or("zero width map")?.chars().count(),
+            width: s.lines().next().ok_or("zero width map")?.chars().count(),
             end,
         })
     }
@@ -124,7 +124,7 @@ impl Map {
                         if this == 'E'.into() {
                             return other >= 'y'.into();
                         }
-                        return this <= other + 1;
+                        this <= other + 1
                     })
                     .unwrap_or(false),
             }
