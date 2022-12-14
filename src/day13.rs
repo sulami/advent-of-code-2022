@@ -61,36 +61,44 @@ enum Message {
 
 impl PartialOrd for Message {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        match (self, other) {
-            (Message::Atom(a), Message::Atom(b)) if a == b => None,
-            (Message::Atom(a), Message::Atom(b)) => a.partial_cmp(b),
-            (Message::List(_), Message::Atom(_)) => {
-                self.partial_cmp(&Message::List(vec![other.clone()]))
-            }
-            (Message::Atom(_), Message::List(_)) => {
-                Message::List(vec![self.clone()]).partial_cmp(other)
-            }
-            (Message::List(a), Message::List(b)) => {
-                for i in 0..a.len().max(b.len()) {
-                    if i >= a.len() && i < b.len() {
-                        return Some(Ordering::Less);
-                    }
-                    if i >= b.len() && i < a.len() {
-                        return Some(Ordering::Greater);
-                    }
-                    if let Some(result) = &a[i].partial_cmp(&b[i]) {
-                        return Some(*result);
-                    }
-                }
-                None
-            }
-        }
+        Some(cmp_messages(self, other).unwrap_or(Ordering::Equal))
     }
 }
 
 impl Ord for Message {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.partial_cmp(other).unwrap_or(Ordering::Equal)
+        cmp_messages(self, other).unwrap_or(Ordering::Equal)
+    }
+}
+
+/// Compares left and right. Will return None instead of
+/// Ordering::Equal, which is used to enable recursion, as we have to
+/// continue comparing more elements on equality. An outside caller
+/// should interpret None as equality.
+fn cmp_messages(left: &Message, right: &Message) -> Option<Ordering> {
+    match (left, right) {
+        (Message::Atom(a), Message::Atom(b)) if a == b => None,
+        (Message::Atom(a), Message::Atom(b)) => a.partial_cmp(b),
+        (Message::List(_), Message::Atom(_)) => {
+            cmp_messages(left, &Message::List(vec![right.clone()]))
+        }
+        (Message::Atom(_), Message::List(_)) => {
+            cmp_messages(&Message::List(vec![left.clone()]), right)
+        }
+        (Message::List(a), Message::List(b)) => {
+            for i in 0..a.len().max(b.len()) {
+                if i >= a.len() && i < b.len() {
+                    return Some(Ordering::Less);
+                }
+                if i >= b.len() && i < a.len() {
+                    return Some(Ordering::Greater);
+                }
+                if let Some(result) = cmp_messages(&a[i], &b[i]) {
+                    return Some(result);
+                }
+            }
+            None
+        }
     }
 }
 
