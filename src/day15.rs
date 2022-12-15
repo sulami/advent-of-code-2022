@@ -4,9 +4,10 @@ use rayon::prelude::*;
 
 pub fn solve() {
     let input = include_str!("../inputs/15.txt");
-    let p1 = std::thread::spawn(|| println!("day 15-1: {}", part1(input, 2_000_000)));
-    println!("day 15-2: {}", part2(input, 4_000_000));
-    p1.join().expect("failed to solve part 1");
+    let p1 = std::thread::spawn(|| part1(input, 2_000_000));
+    let p2 = std::thread::spawn(|| part2(input, 4_000_000));
+    println!("day 15-1: {}", p1.join().expect("failed to solve part 1"));
+    println!("day 15-2: {}", p2.join().expect("failed to solve part 2"));
 }
 
 fn part1(input: &str, row: i32) -> usize {
@@ -25,14 +26,13 @@ fn part2(input: &str, limits: i32) -> i64 {
     let (sensors, beacons) = parse_sensors_and_beacons(input);
     let candidates: FxHashSet<_> = sensors
         .par_iter()
-        .flat_map(|s| s.just_out_of_reach(limits))
+        .flat_map(|s| s.just_out_of_reach(limits, &sensors))
         .collect();
-    for coords in candidates.difference(&beacons) {
-        if !sensors.iter().any(|s| s.is_covered(coords)) {
-            return coords.0 as i64 * 4_000_000 + coords.1 as i64;
-        }
-    }
-    panic!("Failed to find beacon");
+    let (x, y) = candidates
+        .difference(&beacons)
+        .next()
+        .expect("failed to find beacon");
+    *x as i64 * 4_000_000 + *y as i64
 }
 
 fn parse_sensors_and_beacons(input: &str) -> (Vec<Sensor>, FxHashSet<(i32, i32)>) {
@@ -77,8 +77,7 @@ impl Sensor {
     /// sensor, i.e. manhattan distance = detection range + 1. For
     /// performance reasons this only includes fields where 0 <= field
     /// <= limits.
-    fn just_out_of_reach(&self, limits: i32) -> FxHashSet<(i32, i32)> {
-        let mut rv = FxHashSet::default();
+    fn just_out_of_reach(&self, limits: i32, sensors: &[Sensor]) -> Vec<(i32, i32)> {
         let detection_range = self.detection_range + 1;
         for y_offset in -detection_range..=detection_range {
             let y = self.y + y_offset;
@@ -87,15 +86,15 @@ impl Sensor {
             }
             let x_offset = detection_range - y_offset.abs();
             let x = self.x - x_offset;
-            if x >= 0 && x <= limits {
-                rv.insert((x, y));
+            if x >= 0 && x <= limits && !sensors.iter().any(|s| s.is_covered(&(x, y))) {
+                return vec![(x, y)];
             }
             let x = self.x + x_offset;
-            if x >= 0 && x <= limits {
-                rv.insert((x, y));
+            if x >= 0 && x <= limits && !sensors.iter().any(|s| s.is_covered(&(x, y))) {
+                return vec![(x, y)];
             }
         }
-        rv
+        vec![]
     }
 }
 
