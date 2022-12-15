@@ -1,5 +1,6 @@
 use fxhash::FxHashSet;
 use nom::{bytes::complete::tag, character::complete::i32, combinator::all_consuming, IResult};
+use rayon::prelude::*;
 
 pub fn solve() {
     let input = include_str!("../inputs/15.txt");
@@ -10,7 +11,10 @@ pub fn solve() {
 
 fn part1(input: &str, row: i32) -> usize {
     let (sensors, beacons) = parse_sensors_and_beacons(input);
-    let coverage: FxHashSet<_> = sensors.iter().flat_map(|s| s.line_coverage(row)).collect();
+    let coverage: FxHashSet<_> = sensors
+        .par_iter()
+        .flat_map(|s| s.line_coverage(row))
+        .collect();
     coverage
         .iter()
         .filter(|&x| !beacons.contains(&(*x, row)))
@@ -20,7 +24,7 @@ fn part1(input: &str, row: i32) -> usize {
 fn part2(input: &str, limits: i32) -> i64 {
     let (sensors, beacons) = parse_sensors_and_beacons(input);
     let candidates: FxHashSet<_> = sensors
-        .iter()
+        .par_iter()
         .flat_map(|s| s.just_out_of_reach(limits))
         .collect();
     for coords in candidates.difference(&beacons) {
