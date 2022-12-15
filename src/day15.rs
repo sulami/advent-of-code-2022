@@ -10,7 +10,10 @@ pub fn solve() {
 fn part1(input: &str, row: i32) -> usize {
     let (sensors, beacons) = parse_sensors_and_beacons(input);
     let coverage: FxHashSet<_> = sensors.iter().flat_map(|s| s.line_coverage(row)).collect();
-    coverage.difference(&beacons).count()
+    coverage
+        .iter()
+        .filter(|&x| !beacons.contains(&(*x, row)))
+        .count()
 }
 
 fn part2(input: &str, limits: i32) -> i64 {
@@ -54,13 +57,13 @@ impl Sensor {
         manhattan_distance(&(self.x, self.y), coords) <= self.detection_range
     }
 
-    /// Returns a set of all coordinates covered by this sensor which
-    /// match a given y-coordinate.
-    fn line_coverage(&self, y: i32) -> FxHashSet<(i32, i32)> {
+    /// Returns a set of all x-coordinates covered by this sensor
+    /// which match a given y-coordinate.
+    fn line_coverage(&self, y: i32) -> FxHashSet<i32> {
         let mut rv = FxHashSet::default();
         let range = self.detection_range - self.y.abs_diff(y) as i32;
         for x in -range..=range {
-            rv.insert((self.x + x, y));
+            rv.insert(self.x + x);
         }
         rv
     }
