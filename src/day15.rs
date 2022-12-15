@@ -3,8 +3,9 @@ use nom::{bytes::complete::tag, character::complete::i32, combinator::all_consum
 
 pub fn solve() {
     let input = include_str!("../inputs/15.txt");
-    println!("day 15-1: {}", part1(input, 2_000_000));
+    let p1 = std::thread::spawn(|| println!("day 15-1: {}", part1(input, 2_000_000)));
     println!("day 15-2: {}", part2(input, 4_000_000));
+    p1.join().expect("failed to solve part 1");
 }
 
 fn part1(input: &str, row: i32) -> usize {
