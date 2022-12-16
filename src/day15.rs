@@ -4,22 +4,30 @@ use rayon::prelude::*;
 
 pub fn solve() {
     let input = include_str!("../inputs/15.txt");
-    let p1 = std::thread::spawn(|| part1(input, 2_000_000));
-    let p2 = std::thread::spawn(|| part2(input, 4_000_000));
-    println!("day 15-1: {}", p1.join().expect("failed to solve part 1"));
-    println!("day 15-2: {}", p2.join().expect("failed to solve part 2"));
+    println!("day 15-1: {}", part1(input, 2_000_000));
+    println!("day 15-2: {}", part2(input, 4_000_000));
 }
 
 fn part1(input: &str, row: i32) -> usize {
-    let (sensors, beacons) = parse_sensors_and_beacons(input);
-    let coverage: FxHashSet<_> = sensors
-        .par_iter()
-        .flat_map(|s| s.line_coverage(row))
-        .collect();
-    coverage
+    let (sensors, _beacons) = parse_sensors_and_beacons(input);
+    let mut ranges: Vec<_> = sensors.iter().map(|s| s.row_coverage(row)).collect();
+    ranges.sort_by_key(|c| c.0);
+    let mut combined_ranges = vec![];
+    ranges.iter().for_each(|(start, end)| {
+        if let Some((_, last_end)) = combined_ranges.last() {
+            if start <= last_end {
+                combined_ranges.last_mut().unwrap().1 = *end.max(last_end);
+            } else {
+                combined_ranges.push((*start, *end));
+            }
+        } else {
+            combined_ranges.push((*start, *end));
+        }
+    });
+    combined_ranges
         .iter()
-        .filter(|&x| !beacons.contains(&(*x, row)))
-        .count()
+        .map(|(start, end)| end.abs_diff(*start) as usize)
+        .sum()
 }
 
 fn part2(input: &str, limits: i32) -> i64 {
@@ -62,15 +70,13 @@ impl Sensor {
         manhattan_distance(&(self.x, self.y), coords) <= self.detection_range
     }
 
-    /// Returns a set of all x-coordinates covered by this sensor
-    /// which match a given y-coordinate.
-    fn line_coverage(&self, y: i32) -> FxHashSet<i32> {
-        let mut rv = FxHashSet::default();
+    /// Returns a pair of lower and upper bound of all x-coordinates
+    /// covered by this sensor which match a given y-coordinate.
+    fn row_coverage(&self, y: i32) -> (i32, i32) {
         let range = self.detection_range - self.y.abs_diff(y) as i32;
-        for x in -range..=range {
-            rv.insert(self.x + x);
-        }
-        rv
+        let a = self.x - range;
+        let b = self.x + range;
+        (a.min(b), a.max(b))
     }
 
     /// Returns the fields that are surrounding the coverage of this
