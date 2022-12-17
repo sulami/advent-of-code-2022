@@ -1,6 +1,9 @@
+use std::collections::VecDeque;
+
 pub fn solve() {
     let input = include_str!("../inputs/17.txt");
     println!("day 17-1: {}", part1(input));
+    println!("day 17-2: {}", part2(input));
 }
 
 fn part1(input: &str) -> usize {
@@ -10,6 +13,60 @@ fn part1(input: &str) -> usize {
     (0..2022).for_each(|_| chamber.spawn_piece());
     chamber.real_height()
 }
+
+fn part2(input: &str) -> u128 {
+    let jets = parse_jets(input);
+    let mut infinite_jets = jets.iter().copied().cycle();
+    let mut chamber = Chamber::new(&mut infinite_jets);
+
+    // 1T is way too many iterations. But because inputs are
+    // deterministic, we know it can loop. This records a pattern of 5
+    // heights, which repeats eventually. With that we can extrapolate
+    // total height gain.
+    let input_repetition_after = jets.len() as u128 * 5;
+    let mut repetition_pattern: Vec<usize> = vec![];
+
+    for i in 0..input_repetition_after * 5 {
+        if i > 0 && i % input_repetition_after == 0 {
+            repetition_pattern.push(chamber.height());
+        }
+        chamber.spawn_piece()
+    }
+    let base_height = chamber.real_height() as u128;
+
+    let mut heights: VecDeque<usize> = VecDeque::default();
+    let mut loop_iterations = 0u128;
+
+    for i in 0..1_000_000_000_000u128 {
+        if i > 0 && i % input_repetition_after as u128 == 0 {
+            heights.push_back(chamber.height());
+            if heights.len() > 5 {
+                let _ = heights.pop_front();
+            }
+            if heights
+                .iter()
+                .zip(repetition_pattern.iter())
+                .all(|(a, b)| *a == *b)
+            {
+                loop_iterations = i;
+                break;
+            }
+        }
+        chamber.spawn_piece()
+    }
+
+    let post_loop_height = chamber.real_height() as u128;
+    let loop_gain = chamber.real_height() as u128 - base_height;
+    let loops = (1_000_000_000_000u128 - input_repetition_after * 5) / loop_iterations;
+    let extra_iterations = (1_000_000_000_000u128 - input_repetition_after * 5) % loop_iterations;
+
+    for _ in 0..extra_iterations {
+        chamber.spawn_piece();
+    }
+
+    let extra_height = chamber.real_height() as u128 - post_loop_height;
+
+    base_height + loops * loop_gain + extra_height
 }
 
 struct Chamber<'a> {
@@ -43,7 +100,7 @@ impl<'a> Chamber<'a> {
     /// Returns the height of the tower built, excluding unreachable
     /// rows. Useful for indexing into the inner Vec.
     fn height(&self) -> usize {
-        self.inner.iter().take_while(|&r| *r != 0).count()
+        self.inner.len() - self.inner.iter().rev().take_while(|&r| *r == 0).count()
     }
 
     /// Spans the next piece and simulates it falling until it comes
@@ -192,5 +249,10 @@ mod tests {
     #[test]
     fn part1_example() {
         assert_eq!(part1(INPUT), 3068);
+    }
+
+    #[test]
+    fn part2_example() {
+        assert_eq!(part2(INPUT), 1514285714288);
     }
 }
