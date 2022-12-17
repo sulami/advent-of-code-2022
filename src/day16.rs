@@ -49,20 +49,56 @@ fn part1(input: &str) -> Pressure {
             )
         })
         .collect();
-    let mut me = Me::new(&valves, &distances);
-    me.release_pressure()
+    let volcano = Volcano::new(vec![Agent::default()], 30, &valves, &distances);
+    volcano.release_pressure()
 }
 
-fn part2(_input: &str) -> usize {
-    0
+fn part2(input: &str) -> Pressure {
+    let valves: FxHashMap<_, _> = input
+        .lines()
+        .map(|l| {
+            all_consuming(parse_valve)(l)
+                .expect("failed to parse valve")
+                .1
+        })
+        .map(|v| (v.name.clone(), v))
+        .collect();
+    // These are the valves that can actually be opened, as well as
+    // the starting position. We use this to pre-calculate distances
+    // between useful graph nodes. The useless valves inbetween are
+    // just used to modify edge weights.
+    let mut useful_valves: Vec<Valve> = valves
+        .values()
+        .cloned()
+        .filter(|v| v.flow_rate > 0)
+        .collect();
+    useful_valves.push(valves.get("AA").unwrap().clone());
+    let distances: FxHashMap<_, _> = useful_valves
+        .iter()
+        .permutations(2)
+        .par_bridge()
+        .map(|vs| {
+            (
+                (vs[0].name.clone(), vs[1].name.clone()),
+                vs[0].eta(&vs[1].name, &valves),
+            )
+        })
+        .collect();
+    let volcano = Volcano::new(
+        vec![Agent::default(), Agent::default()],
+        26,
+        &valves,
+        &distances,
+    );
+    volcano.release_pressure()
 }
 
 type Time = u8;
 type Pressure = u16;
 
-#[derive(Clone)]
-struct Me<'a> {
-    position: String,
+#[derive(Clone, Debug)]
+struct Volcano<'a> {
+    agents: Vec<Agent>,
     opened: FxHashSet<String>,
     time_remaining: Time,
     pressure_released: Pressure,
@@ -70,57 +106,94 @@ struct Me<'a> {
     distances: &'a FxHashMap<(String, String), Time>,
 }
 
-impl<'a> Me<'a> {
-    /// Constructs a new me!
+impl<'a> Volcano<'a> {
     fn new(
+        agents: Vec<Agent>,
+        time_remaining: Time,
         valves: &'a FxHashMap<String, Valve>,
         distances: &'a FxHashMap<(String, String), Time>,
     ) -> Self {
         Self {
-            position: "AA".to_string(),
+            agents,
             opened: FxHashSet::default(),
-            time_remaining: 30,
+            time_remaining,
             pressure_released: 0,
             valves,
             distances,
         }
     }
 
-    /// Returns the maximum amount of pressure I can release.
-    fn release_pressure(&mut self) -> Pressure {
+    /// Returns the maximum amount of pressure that can be released in
+    /// this volcano.
+    fn release_pressure(self) -> Pressure {
         let mut rv = 0;
-        self.open_valves(&mut rv);
+        self.pass_time(&mut rv);
         rv
     }
 
-    /// Recursively try all different valve combinations that can be
-    /// tried in the time remaining. Update acc with a new released
-    /// pressure if I find an order that releases more pressure than
-    /// acc currently holds.
-    fn open_valves(&mut self, acc: &mut Pressure) {
-        let candidates = self.next_valve_candidates();
-        if candidates.is_empty() {
-            *acc = (*acc).max(self.pressure_released);
+    /// Called the next time at least one agent is idle, and thus
+    /// needs to get moving.
+    fn pass_time(self, acc: &mut Pressure) {
+        let mut agent_options: Vec<_> = (0..self.agents.len())
+            .map(|_| FxHashSet::default())
+            .collect();
+        for (idx, agent) in self.agents.iter().enumerate() {
+            if agent.busy_until < self.time_remaining {
+                continue;
+            }
+            for candidate in self.next_valve_candidates(agent) {
+                agent_options[idx].insert((idx, candidate));
+            }
         }
-        for (candidate, time_taken, pressure_released) in candidates {
-            let mut opened = self.opened.clone();
-            opened.insert(candidate.clone());
-            let mut new_me = Self {
-                position: candidate,
-                time_remaining: self.time_remaining - time_taken,
-                pressure_released: self.pressure_released + pressure_released,
-                valves: self.valves,
-                opened,
-                distances: self.distances,
-            };
-            new_me.open_valves(acc);
+        let idle_agents = agent_options.iter().filter(|o| !o.is_empty()).count();
+        *acc = (*acc).max(self.pressure_released);
+        if idle_agents == 1 {
+            for (idx, (candidate, time_taken, pressure_released)) in
+                agent_options.iter().find(|v| !v.is_empty()).unwrap()
+            {
+                let mut new_volcano = self.clone();
+                let this_agent = &mut new_volcano.agents[*idx];
+                this_agent.position = candidate.clone();
+                this_agent.busy_until = new_volcano.time_remaining - time_taken;
+                new_volcano.time_remaining = new_volcano
+                    .agents
+                    .iter()
+                    .map(|a| a.busy_until)
+                    .max()
+                    .unwrap_or_default();
+                new_volcano.opened.insert(candidate.clone());
+                new_volcano.pressure_released += pressure_released;
+                new_volcano.pass_time(acc);
+            }
+        } else {
+            for options in agent_options
+                .iter()
+                .multi_cartesian_product()
+                .filter(|opts| opts[0].1 .0 != opts[1].1 .0)
+            {
+                let mut new_volcano = self.clone();
+                for (agent_idx, (next_valve, time_taken, pressure_released)) in options {
+                    let this_agent = &mut new_volcano.agents[*agent_idx];
+                    this_agent.position = next_valve.clone();
+                    this_agent.busy_until = new_volcano.time_remaining - time_taken;
+                    new_volcano.opened.insert(next_valve.clone());
+                    new_volcano.pressure_released += pressure_released;
+                }
+                new_volcano.time_remaining = new_volcano
+                    .agents
+                    .iter()
+                    .map(|a| a.busy_until)
+                    .max()
+                    .unwrap_or_default();
+                new_volcano.pass_time(acc);
+            }
         }
     }
 
     /// Returns a Vec of valves that could be opened next, along with
     /// the time that would take, and the pressure that would be
     /// released in the time remaining.
-    fn next_valve_candidates(&self) -> Vec<(String, Time, Pressure)> {
+    fn next_valve_candidates(&self, agent: &Agent) -> Vec<(String, Time, Pressure)> {
         self.valves
             .values()
             .filter(|v| v.flow_rate > 0)
@@ -128,7 +201,7 @@ impl<'a> Me<'a> {
             .filter_map(|v| {
                 let time_required: Time = *self
                     .distances
-                    .get(&(self.position.clone(), v.name.clone()))
+                    .get(&(agent.position.clone(), v.name.clone()))
                     .unwrap();
                 if time_required <= self.time_remaining {
                     Some((
@@ -141,6 +214,21 @@ impl<'a> Me<'a> {
                 }
             })
             .collect()
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+struct Agent {
+    position: String,
+    busy_until: Time,
+}
+
+impl Default for Agent {
+    fn default() -> Self {
+        Self {
+            position: "AA".to_string(),
+            busy_until: 30,
+        }
     }
 }
 
@@ -211,5 +299,10 @@ Valve JJ has flow rate=21; tunnel leads to valve II";
     #[test]
     fn part1_example() {
         assert_eq!(part1(INPUT), 1651);
+    }
+
+    #[test]
+    fn part2_example() {
+        assert_eq!(part2(INPUT), 1707);
     }
 }
