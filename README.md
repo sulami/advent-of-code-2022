@@ -21,3 +21,5 @@ I have some self-imposed rules and goals:
    in under 100ms, but even under 1s would be great. All it takes for
    this to fail is one particularly crunchy day, but fingers crossed.
    I might resort to multi-threading if that can help.
+5. Self-found only. No looking up approaches or solutions elsewhere.
+   Looking up algorithms is fine though.
