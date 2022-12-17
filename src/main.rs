@@ -16,20 +16,32 @@ mod day15;
 mod day16;
 
 fn main() {
-    day01::solve();
-    day02::solve();
-    day03::solve();
-    day04::solve();
-    day05::solve();
-    day06::solve();
-    day07::solve();
-    day08::solve();
-    day09::solve();
-    day10::solve();
-    day11::solve();
-    day12::solve();
-    day13::solve();
-    day14::solve();
-    day15::solve();
-    day16::solve();
+    let start = std::time::Instant::now();
+    for day in [
+        day01::solve,
+        day02::solve,
+        day03::solve,
+        day04::solve,
+        day05::solve,
+        day06::solve,
+        day07::solve,
+        day08::solve,
+        day09::solve,
+        day10::solve,
+        day11::solve,
+        day12::solve,
+        day13::solve,
+        day14::solve,
+        day15::solve,
+        day16::solve,
+    ] {
+        let day_start = std::time::Instant::now();
+        day();
+        if !std::env::var("TIME").unwrap_or_default().is_empty() {
+            println!("{:?}", day_start.elapsed());
+        }
+    }
+    if !std::env::var("TIME").unwrap_or_default().is_empty() {
+        println!("total: {:?}", start.elapsed());
+    }
 }
