@@ -8,7 +8,8 @@ fn part1(input: &str) -> usize {
     let mut jets = jets.iter().copied().cycle();
     let mut chamber = Chamber::new(&mut jets);
     (0..2022).for_each(|_| chamber.spawn_piece());
-    chamber.height()
+    chamber.real_height()
+}
 }
 
 struct Chamber<'a> {
@@ -17,6 +18,10 @@ struct Chamber<'a> {
     /// Each row is the lower 7 bits, where a set bit is a piece. The
     /// first row is the bottom-most.
     inner: Vec<u8>,
+    /// The number of rows that is unreachable for newly falling
+    /// pieces. Because we only care about tower height, we can remove
+    /// those rows, almost like real Tetris.
+    unreachable: usize,
 }
 
 impl<'a> Chamber<'a> {
@@ -25,10 +30,18 @@ impl<'a> Chamber<'a> {
             source: TetrisPieceSource::default(),
             jets,
             inner: Vec::default(),
+            unreachable: 0,
         }
     }
 
-    /// Returns the height of the tower built.
+    /// Returns the height of the tower built, including unreachable
+    /// rows.
+    fn real_height(&self) -> usize {
+        self.unreachable + self.height()
+    }
+
+    /// Returns the height of the tower built, excluding unreachable
+    /// rows. Useful for indexing into the inner Vec.
     fn height(&self) -> usize {
         self.inner.iter().take_while(|&r| *r != 0).count()
     }
@@ -41,20 +54,16 @@ impl<'a> Chamber<'a> {
         let mut y: usize = self.height() + 3;
 
         // Ensure we have a healthy padding of empty rows at the top.
-        if self.inner.len() < self.height() + 6 {
-            self.inner.extend([0, 0, 0, 0, 0, 0]);
-        } else {
-            self.inner.truncate(self.height() + 6);
-        }
+        self.inner.resize(self.height() + 6, 0);
 
         loop {
-            // Apply the jet, if any.
+            // Apply the jet.
             let proposed_x = match self.jets.next() {
                 Some(Jet::Left) => x.saturating_sub(1),
                 Some(Jet::Right) => (7 - piece.width()).min(x + 1),
-                None => x,
+                None => unreachable!(),
             };
-            if !piece.collides(proposed_x, y, &self.inner) {
+            if proposed_x != x && !piece.collides(proposed_x, y, &self.inner) {
                 x = proposed_x;
             }
 
@@ -73,6 +82,14 @@ impl<'a> Chamber<'a> {
             .skip(y)
             .zip(piece.binary_repr())
             .for_each(|(existing, piece)| *existing |= piece >> x);
+
+        // If any rows became unreachable, chop them off.
+        if let Some(idx) = self.inner.iter().rposition(|row| *row == 0b01111111) {
+            self.unreachable += idx + 1;
+            self.inner = self.inner.split_off(idx + 1);
+            // Reserve some extra space to avoid many small allocations.
+            self.inner.reserve(64);
+        }
     }
 }
 
@@ -114,15 +131,15 @@ impl TetrisPiece {
         }
     }
 
-    /// Returns a Vec of rows that represent this piece. The rows are
-    /// in bottom-top order. The piece is aligned at x = 0.
-    fn binary_repr(&self) -> Vec<u8> {
+    /// Returns a slice of rows that represent this piece. The rows
+    /// are in bottom-top order. The piece is aligned at x = 0.
+    fn binary_repr(&self) -> [u8; 4] {
         match self {
-            Self::HorizontalBar => vec![0b01111000],
-            Self::Plus => vec![0b00100000, 0b01110000, 0b00100000],
-            Self::LShape => vec![0b01110000, 0b00010000, 0b00010000],
-            Self::VerticalBar => vec![0b01000000, 0b01000000, 0b01000000, 0b01000000],
-            Self::Box => vec![0b01100000, 0b01100000],
+            Self::HorizontalBar => [0b01111000, 0, 0, 0],
+            Self::Plus => [0b00100000, 0b01110000, 0b00100000, 0],
+            Self::LShape => [0b01110000, 0b00010000, 0b00010000, 0],
+            Self::VerticalBar => [0b01000000, 0b01000000, 0b01000000, 0b01000000],
+            Self::Box => [0b01100000, 0b01100000, 0, 0],
         }
     }
 
