@@ -54,7 +54,9 @@ impl<'a> Chamber<'a> {
         let mut y: usize = self.height() + 3;
 
         // Ensure we have a healthy padding of empty rows at the top.
-        self.inner.resize(self.height() + 6, 0);
+        if self.inner.iter().rev().take_while(|&r| *r == 0).count() < 6 {
+            self.inner.extend([0, 0, 0, 0, 0, 0]);
+        }
 
         loop {
             // Apply the jet.
@@ -77,11 +79,9 @@ impl<'a> Chamber<'a> {
 
         // Apply the piece bits to existing rows where the piece comes
         // to rest.
-        self.inner
-            .iter_mut()
-            .skip(y)
-            .zip(piece.binary_repr())
-            .for_each(|(existing, piece)| *existing |= piece >> x);
+        for (i, p) in piece.binary_repr().iter().enumerate() {
+            self.inner[y + i] |= p >> x;
+        }
 
         // If any rows became unreachable, chop them off.
         if let Some(idx) = self.inner.iter().rposition(|row| *row == 0b01111111) {
