@@ -14,83 +14,64 @@ use rayon::prelude::*;
 
 pub fn solve() {
     let input = include_str!("../inputs/16.txt");
-    println!("day 16-1: {}", part1(input));
-    println!("day 16-2: {}", part2(input));
+    let (valves, distances) = setup(input);
+    println!("day 16-1: {}", part1(&valves, &distances));
+    println!("day 16-2: {}", part2(&valves, &distances));
 }
 
-fn part1(input: &str) -> Pressure {
-    let valves: FxHashMap<_, _> = input
-        .lines()
-        .map(|l| {
-            all_consuming(parse_valve)(l)
-                .expect("failed to parse valve")
-                .1
-        })
-        .map(|v| (v.name.clone(), v))
-        .collect();
-    // These are the valves that can actually be opened, as well as
-    // the starting position. We use this to pre-calculate distances
-    // between useful graph nodes. The useless valves inbetween are
-    // just used to modify edge weights.
-    let mut useful_valves: Vec<Valve> = valves
-        .values()
-        .cloned()
-        .filter(|v| v.flow_rate > 0)
-        .collect();
-    useful_valves.push(valves.get("AA").unwrap().clone());
-    let distances: FxHashMap<_, _> = useful_valves
-        .iter()
-        .permutations(2)
-        .par_bridge()
-        .map(|vs| {
-            (
-                (vs[0].name.clone(), vs[1].name.clone()),
-                vs[0].eta(&vs[1].name, &valves),
-            )
-        })
-        .collect();
-    let volcano = Volcano::new(vec![Agent::default()], 30, &valves, &distances);
+fn part1(
+    valves: &FxHashMap<String, Valve>,
+    distances: &FxHashMap<(String, String), Time>,
+) -> Pressure {
+    let volcano = Volcano::new(vec![Agent::default()], 30, valves, distances);
     volcano.release_pressure()
 }
 
-fn part2(input: &str) -> Pressure {
-    let valves: FxHashMap<_, _> = input
-        .lines()
-        .map(|l| {
-            all_consuming(parse_valve)(l)
-                .expect("failed to parse valve")
-                .1
-        })
-        .map(|v| (v.name.clone(), v))
-        .collect();
-    // These are the valves that can actually be opened, as well as
-    // the starting position. We use this to pre-calculate distances
-    // between useful graph nodes. The useless valves inbetween are
-    // just used to modify edge weights.
-    let mut useful_valves: Vec<Valve> = valves
-        .values()
-        .cloned()
-        .filter(|v| v.flow_rate > 0)
-        .collect();
-    useful_valves.push(valves.get("AA").unwrap().clone());
-    let distances: FxHashMap<_, _> = useful_valves
-        .iter()
-        .permutations(2)
-        .par_bridge()
-        .map(|vs| {
-            (
-                (vs[0].name.clone(), vs[1].name.clone()),
-                vs[0].eta(&vs[1].name, &valves),
-            )
-        })
-        .collect();
+fn part2(
+    valves: &FxHashMap<String, Valve>,
+    distances: &FxHashMap<(String, String), Time>,
+) -> Pressure {
     let volcano = Volcano::new(
         vec![Agent::default(), Agent::default()],
         26,
-        &valves,
-        &distances,
+        valves,
+        distances,
     );
     volcano.release_pressure()
+}
+
+fn setup(input: &str) -> (FxHashMap<String, Valve>, FxHashMap<(String, String), Time>) {
+    let valves: FxHashMap<_, _> = input
+        .lines()
+        .map(|l| {
+            all_consuming(parse_valve)(l)
+                .expect("failed to parse valve")
+                .1
+        })
+        .map(|v| (v.name.clone(), v))
+        .collect();
+    // These are the valves that can actually be opened, as well as
+    // the starting position. We use this to pre-calculate distances
+    // between useful graph nodes. The useless valves inbetween are
+    // just used to modify edge weights.
+    let mut useful_valves: Vec<Valve> = valves
+        .values()
+        .cloned()
+        .filter(|v| v.flow_rate > 0)
+        .collect();
+    useful_valves.push(valves.get("AA").unwrap().clone());
+    let distances: FxHashMap<_, _> = useful_valves
+        .iter()
+        .permutations(2)
+        .par_bridge()
+        .map(|vs| {
+            (
+                (vs[0].name.clone(), vs[1].name.clone()),
+                vs[0].eta(&vs[1].name, &valves),
+            )
+        })
+        .collect();
+    (valves, distances)
 }
 
 type Time = u8;
@@ -298,11 +279,13 @@ Valve JJ has flow rate=21; tunnel leads to valve II";
 
     #[test]
     fn part1_example() {
-        assert_eq!(part1(INPUT), 1651);
+        let (v, d) = setup(INPUT);
+        assert_eq!(part1(&v, &d), 1651);
     }
 
     #[test]
     fn part2_example() {
-        assert_eq!(part2(INPUT), 1707);
+        let (v, d) = setup(INPUT);
+        assert_eq!(part2(&v, &d), 1707);
     }
 }
