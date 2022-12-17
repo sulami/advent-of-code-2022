@@ -115,19 +115,36 @@ impl<'a> Volcano<'a> {
     /// Called the next time at least one agent is idle, and thus
     /// needs to get moving.
     fn pass_time(self, acc: &mut Pressure) {
-        let mut agent_options: Vec<_> = (0..self.agents.len())
-            .map(|_| FxHashSet::default())
-            .collect();
+        // If there is no possible way of surpassing the current best
+        // found option, just abort right here.
+        let potential = self
+            .valves
+            .values()
+            .filter_map(|v| {
+                if self.opened.contains(&v.name) {
+                    None
+                } else {
+                    Some(v.flow_rate * self.time_remaining as u16)
+                }
+            })
+            .sum::<u16>();
+        if self.pressure_released + potential <= *acc {
+            return;
+        }
+
+        let mut agent_options: Vec<_> = (0..self.agents.len()).map(|_| Vec::default()).collect();
         for (idx, agent) in self.agents.iter().enumerate() {
             if agent.busy_until < self.time_remaining {
                 continue;
             }
             for candidate in self.next_valve_candidates(agent) {
-                agent_options[idx].insert((idx, candidate));
+                agent_options[idx].push((idx, candidate));
             }
         }
+
         let idle_agents = agent_options.iter().filter(|o| !o.is_empty()).count();
         *acc = (*acc).max(self.pressure_released);
+
         if idle_agents == 1 {
             for (idx, (candidate, time_taken, pressure_released)) in
                 agent_options.iter().find(|v| !v.is_empty()).unwrap()
