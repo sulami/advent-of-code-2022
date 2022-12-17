@@ -1,7 +1,9 @@
 /// This solves backwards, walking the map from 'E' to 'S'/'a', to
 /// make part 2 much faster.
-use std::collections::{HashSet, VecDeque};
+use std::collections::VecDeque;
 use std::str::FromStr;
+
+use fxhash::FxHashSet;
 
 pub fn solve() {
     let input = include_str!("../inputs/12.txt");
@@ -26,7 +28,7 @@ struct Walker<'a> {
     goal: u32,
     map: &'a Map,
     candidates: VecDeque<Vec<usize>>,
-    visited: HashSet<usize>,
+    visited: FxHashSet<usize>,
 }
 
 impl<'a> Walker<'a> {
@@ -35,7 +37,7 @@ impl<'a> Walker<'a> {
         map.options(map.end)
             .iter()
             .for_each(|&o| candidates.push_front(vec![o]));
-        let visited = HashSet::new();
+        let visited = FxHashSet::default();
         Self {
             goal,
             map,

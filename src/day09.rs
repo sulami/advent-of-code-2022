@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use fxhash::FxHashSet;
 use std::str::FromStr;
 
 pub fn solve() {
@@ -50,15 +50,17 @@ type Knot = (i16, i16);
 
 struct Rope {
     knots: Vec<Knot>,
-    tail_history: HashSet<Knot>,
+    tail_history: FxHashSet<Knot>,
 }
 
 impl Rope {
     fn new(num_knots: usize) -> Self {
         assert!(num_knots > 0);
+        let mut tail_history = FxHashSet::default();
+        tail_history.insert((0, 0));
         Self {
             knots: vec![(0, 0); num_knots],
-            tail_history: HashSet::from([(0, 0)]),
+            tail_history,
         }
     }
 

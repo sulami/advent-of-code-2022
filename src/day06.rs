@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use fxhash::FxHashSet;
 
 pub fn solve() {
     let input = include_str!("../inputs/06.txt");
@@ -19,7 +19,7 @@ fn find_start(message: &str, size: usize) -> Option<usize> {
                 .chars()
                 .skip(i)
                 .take(size)
-                .collect::<HashSet<_>>()
+                .collect::<FxHashSet<_>>()
                 .len()
                 == size
         })
