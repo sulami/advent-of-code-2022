@@ -8,7 +8,6 @@ use nom::{
     multi::separated_list1,
     IResult,
 };
-use rayon::prelude::*;
 
 pub fn solve() {
     let input = include_str!("../inputs/18.txt");
@@ -25,8 +24,11 @@ fn part1(input: &str) -> usize {
                 .1
         })
         .collect();
+
+    // Get all rock-neighbouring fields that are rocks themselves,
+    // thus sides of a rock that aren't touching the air.
     let connections: usize = rocks
-        .par_iter()
+        .iter()
         .map(|[x, y, z]| {
             [
                 [(*x + 1), *y, *z],
@@ -42,6 +44,9 @@ fn part1(input: &str) -> usize {
             .count()
         })
         .sum();
+
+    // Rocks have 6 surface sides, minus any that are covered by other
+    // rocks.
     rocks.len() * 6 - connections
 }
 
@@ -55,31 +60,36 @@ fn part2(input: &str) -> usize {
         })
         .collect();
 
+    // Find the bounds of the 3D shape described.
     let min_x = rocks.iter().map(|[x, _, _]| x).min().unwrap();
     let min_y = rocks.iter().map(|[_, y, _]| y).min().unwrap();
     let min_z = rocks.iter().map(|[_, _, z]| z).min().unwrap();
     let max_x = rocks.iter().map(|[x, _, _]| x).max().unwrap();
     let max_y = rocks.iter().map(|[_, y, _]| y).max().unwrap();
     let max_z = rocks.iter().map(|[_, _, z]| z).max().unwrap();
-    let all_fields: FxHashSet<Rock> = (min_x - 1..=max_x + 1)
+
+    // Collect all empty (non-rock) fields in the box surrounding the
+    // shape.
+    let empty_fields: FxHashSet<Rock> = (min_x - 1..=max_x + 1)
         .flat_map(|x| {
             (min_y - 1..=max_y + 1)
                 .flat_map(|y| {
                     (min_z - 1..=max_z + 1)
                         .map(|z| [x, y, z])
-                        .collect::<FxHashSet<_>>()
+                        .filter(|r| !rocks.contains(r))
+                        .collect::<Vec<_>>()
                 })
-                .collect::<FxHashSet<_>>()
+                .collect::<Vec<_>>()
         })
         .collect();
 
-    let empty_fields: FxHashSet<Rock> = all_fields.difference(&rocks).copied().collect();
-    let mut outside = FxHashSet::default();
+    // Flood fill from the outside to find all the empty fields that
+    // are reachable by water.
+    let outside = flood_fill([*min_x, *min_y, *min_z], &empty_fields);
 
-    flood_fill([*min_x, *min_y, *min_z], &empty_fields, &mut outside);
-
+    // Same as part 1, but limited to those reachable fields.
     rocks
-        .par_iter()
+        .iter()
         .map(|[x, y, z]| {
             [
                 [(*x + 1), *y, *z],
@@ -105,7 +115,10 @@ fn parse_rock(i: &str) -> IResult<&str, Rock> {
     })(i)
 }
 
-fn flood_fill(start: Rock, valid: &FxHashSet<Rock>, visited: &mut FxHashSet<Rock>) {
+/// 3D flood-fill from the start, using only coordinates that are in
+/// valid for traversal, returning the set of visited fields.
+fn flood_fill(start: Rock, valid: &FxHashSet<Rock>) -> FxHashSet<Rock> {
+    let mut visited = FxHashSet::default();
     let mut queue = VecDeque::from([start]);
     while let Some([x, y, z]) = queue.pop_front() {
         let neighbours = [
@@ -126,6 +139,7 @@ fn flood_fill(start: Rock, valid: &FxHashSet<Rock>, visited: &mut FxHashSet<Rock
             }
         }
     }
+    visited
 }
 
 #[cfg(test)]
