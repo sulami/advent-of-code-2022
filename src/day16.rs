@@ -145,6 +145,8 @@ impl<'a> Volcano<'a> {
             return;
         }
 
+        // Collect the different valves that each agent could open
+        // next.
         let mut agent_options: Vec<_> = (0..self.agents.len()).map(|_| Vec::default()).collect();
         for (idx, agent) in self.agents.iter().enumerate() {
             if agent.busy_until < self.time_remaining {
@@ -160,9 +162,61 @@ impl<'a> Volcano<'a> {
         *acc = (*acc).max(self.pressure_released);
 
         if idle_agents == 1 {
+            // If there is only one idle agent, branch out for all
+            // valves this agent could open next.
             for (idx, (candidate, time_taken, pressure_released)) in
                 agent_options.iter().find(|v| !v.is_empty()).unwrap()
             {
+                // If there is no possible way of surpassing the
+                // current best found option, just abort right here.
+                // This is a bit of a mess, because it basically
+                // simulates one step ahead before we do an
+                // expensive-ish clone of the whole volcano. The
+                // functionality is similar, but not the same as the
+                // version above.
+                let potential: u16 = self
+                    .valves
+                    .values()
+                    .filter_map(|v| {
+                        if &v.name == candidate || self.opened.contains(v.name.as_str()) {
+                            None
+                        } else {
+                            let eta_from_candidate = self
+                                .distances
+                                .get(&(candidate.to_string(), v.name.to_string()))
+                                .unwrap_or(&Time::MAX);
+                            let best_agent_eta = self
+                                .agents
+                                .iter()
+                                .enumerate()
+                                .filter_map(|(i, a)| {
+                                    if i != *idx {
+                                        Some(
+                                            self.distances
+                                                .get(&(a.position.to_string(), v.name.to_string()))
+                                                .map(|t| *t + self.time_remaining - a.busy_until)
+                                                .unwrap_or(Time::MAX),
+                                        )
+                                    } else {
+                                        None
+                                    }
+                                })
+                                .min()
+                                .unwrap_or(Time::MAX);
+                            let best_eta = eta_from_candidate.min(&best_agent_eta);
+                            Some(
+                                v.flow_rate
+                                    * ((self.time_remaining as u16)
+                                        .saturating_sub(*time_taken as u16)
+                                        .saturating_sub(*best_eta as u16)),
+                            )
+                        }
+                    })
+                    .sum();
+                if self.pressure_released + pressure_released + potential <= *acc {
+                    continue;
+                }
+
                 let mut new_volcano = self.clone();
                 let this_agent = &mut new_volcano.agents[*idx];
                 this_agent.position = candidate;
@@ -178,6 +232,10 @@ impl<'a> Volcano<'a> {
                 new_volcano.pass_time(acc);
             }
         } else {
+            // If there are several idle agents, build a catesian
+            // product of their options, so that they try all
+            // combinations of remaining valves, where they can't open
+            // the same valve next.
             for options in agent_options
                 .iter()
                 .multi_cartesian_product()
