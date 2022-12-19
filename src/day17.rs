@@ -1,5 +1,3 @@
-use std::collections::VecDeque;
-
 pub fn solve() {
     let input = include_str!("../inputs/17.txt");
     println!("day 17-1: {}", part1(input));
@@ -23,50 +21,65 @@ fn part2(input: &str) -> u128 {
     // deterministic, we know it can loop. This records a pattern of 5
     // heights, which repeats eventually. With that we can extrapolate
     // total height gain.
-    let input_repetition_after = jets.len() as u128 * 5;
-    let mut repetition_pattern: Vec<usize> = vec![];
 
-    for i in 0..input_repetition_after * 5 {
-        if i > 0 && i % input_repetition_after == 0 {
-            repetition_pattern.push(chamber.height());
-        }
-        chamber.spawn_piece()
+    // Run to first clear and record that height.
+    chamber.spawn_piece();
+    let mut base_iterations = 1;
+    while chamber.height() != 0 {
+        chamber.spawn_piece();
+        base_iterations += 1;
     }
-    let base_height = chamber.real_height() as u128;
+    let base_height = chamber.real_height();
 
-    let mut heights: VecDeque<usize> = VecDeque::default();
+    // Record a cycle pattern of pieces to clear.
+    let mut repetition_pattern: Vec<usize> = vec![];
     let mut loop_iterations = 0u128;
-
-    for i in 0..1_000_000_000_000u128 {
-        if i > 0 && i % input_repetition_after as u128 == 0 {
-            heights.push_back(chamber.height());
-            if heights.len() > 5 {
-                let _ = heights.pop_front();
-            }
-            if heights
-                .iter()
-                .zip(repetition_pattern.iter())
-                .all(|(a, b)| *a == *b)
-            {
-                loop_iterations = i;
+    for i in 0.. {
+        if i > 0 && chamber.height() == 0 {
+            repetition_pattern.push(i - repetition_pattern.iter().sum::<usize>());
+            // NB My input only clears rows twice per cycle, so I can
+            // use a very short pattern, other inputs might require
+            // larger patterns.
+            if repetition_pattern.len() == 2 {
                 break;
             }
         }
-        chamber.spawn_piece()
+        loop_iterations += 1;
+        chamber.spawn_piece();
     }
 
-    let post_loop_height = chamber.real_height() as u128;
-    let loop_gain = chamber.real_height() as u128 - base_height;
-    let loops = (1_000_000_000_000u128 - input_repetition_after * 5) / loop_iterations;
-    let extra_iterations = (1_000_000_000_000u128 - input_repetition_after * 5) % loop_iterations;
+    // Try to find that pattern again.
+    let mut pattern_matches = 0;
+    let mut last_clear = 0;
+    for i in 0.. {
+        if i > 0 && chamber.height() == 0 {
+            if repetition_pattern[pattern_matches] == i - last_clear {
+                pattern_matches += 1;
+            } else {
+                pattern_matches = 0;
+            }
+            if pattern_matches == repetition_pattern.len() - 1 {
+                break;
+            }
+            last_clear = i;
+        }
+        loop_iterations += 1;
+        chamber.spawn_piece();
+    }
 
+    let post_loop_height = chamber.real_height();
+    let loop_gain = post_loop_height - base_height;
+
+    // Finish up the last bit to get to 1T iterations.
+    let loops = (1_000_000_000_000u128 - base_iterations) / loop_iterations;
+    let extra_iterations = (1_000_000_000_000u128 - base_iterations) % loop_iterations;
     for _ in 0..extra_iterations {
         chamber.spawn_piece();
     }
 
-    let extra_height = chamber.real_height() as u128 - post_loop_height;
+    let extra_height = chamber.real_height() - post_loop_height;
 
-    base_height + loops * loop_gain + extra_height
+    base_height as u128 + loops * loop_gain as u128 + extra_height as u128
 }
 
 struct Chamber<'a> {
@@ -111,25 +124,26 @@ impl<'a> Chamber<'a> {
         let mut y: usize = self.height() + 3;
 
         // Ensure we have a healthy padding of empty rows at the top.
-        if self.inner.iter().rev().take_while(|&r| *r == 0).count() < 6 {
-            self.inner.extend([0, 0, 0, 0, 0, 0]);
+        if self.inner.iter().rev().take_while(|&r| *r == 0).count() < 4 {
+            self.inner.extend([0, 0, 0, 0]);
         }
 
+        let mut dropped = 0;
         loop {
             // Apply the jet.
-            let proposed_x = match self.jets.next() {
-                Some(Jet::Left) => x.saturating_sub(1),
-                Some(Jet::Right) => (7 - piece.width()).min(x + 1),
-                None => unreachable!(),
+            let proposed_x = match self.jets.next().unwrap() {
+                Jet::Left => x.saturating_sub(1),
+                Jet::Right => (7 - piece.width()).min(x + 1),
             };
             if proposed_x != x && !piece.collides(proposed_x, y, &self.inner) {
                 x = proposed_x;
             }
 
             // Try to fall down.
-            if y == 0 || piece.collides(x, y - 1, &self.inner) {
+            if dropped > 2 && (y == 0 || piece.collides(x, y - 1, &self.inner)) {
                 break;
             } else {
+                dropped += 1;
                 y -= 1;
             }
         }
@@ -145,7 +159,7 @@ impl<'a> Chamber<'a> {
             self.unreachable += idx + 1;
             self.inner = self.inner.split_off(idx + 1);
             // Reserve some extra space to avoid many small allocations.
-            self.inner.reserve(64);
+            self.inner.reserve(128);
         }
     }
 }
@@ -203,11 +217,19 @@ impl TetrisPiece {
     /// Returns true if the piece would collide with an existing piece
     /// in the chamber if placed at the given position.
     fn collides(&self, x: usize, y: usize, chamber: &[u8]) -> bool {
-        chamber
-            .iter()
-            .skip(y)
-            .zip(self.binary_repr())
-            .any(|(existing, piece)| (piece >> x) & existing != 0)
+        let piece = self.binary_repr();
+        for i in 0..4 {
+            if chamber.len() <= y + i {
+                return false;
+            }
+            if chamber[y + i] == 0 {
+                return false;
+            }
+            if chamber[y + i] & (piece[i] >> x) != 0 {
+                return true;
+            }
+        }
+        false
     }
 }
 
