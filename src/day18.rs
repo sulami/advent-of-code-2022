@@ -25,9 +25,9 @@ fn part1(input: &str) -> usize {
         })
         .collect();
 
-    // Get all rock-neighbouring fields that are rocks themselves,
-    // thus sides of a rock that aren't touching the air.
-    let connections: usize = rocks
+    // Get all rock-neighbouring fields that aren't rocks themselves,
+    // thus sides of a rock that are touching the air.
+    rocks
         .iter()
         .map(|[x, y, z]| {
             [
@@ -40,14 +40,10 @@ fn part1(input: &str) -> usize {
             ]
             .iter()
             .copied()
-            .filter(|coords| rocks.contains(coords))
+            .filter(|coords| !rocks.contains(coords))
             .count()
         })
-        .sum();
-
-    // Rocks have 6 surface sides, minus any that are covered by other
-    // rocks.
-    rocks.len() * 6 - connections
+        .sum()
 }
 
 fn part2(input: &str) -> usize {
