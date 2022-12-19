@@ -117,17 +117,30 @@ impl<'a> Volcano<'a> {
     fn pass_time(self, acc: &mut Pressure) {
         // If there is no possible way of surpassing the current best
         // found option, just abort right here.
-        let potential = self
+        let potential: u16 = self
             .valves
             .values()
             .filter_map(|v| {
                 if self.opened.contains(v.name.as_str()) {
                     None
                 } else {
-                    Some(v.flow_rate * self.time_remaining as u16)
+                    let best_eta = self
+                        .agents
+                        .iter()
+                        .map(|agent| {
+                            self.distances
+                                .get(&(agent.position.to_string(), v.name.to_string()))
+                                .unwrap_or(&Time::MAX)
+                        })
+                        .min()
+                        .unwrap();
+                    Some(
+                        v.flow_rate
+                            * ((self.time_remaining as u16).saturating_sub(*best_eta as u16)),
+                    )
                 }
             })
-            .sum::<u16>();
+            .sum();
         if self.pressure_released + potential <= *acc {
             return;
         }
@@ -140,6 +153,7 @@ impl<'a> Volcano<'a> {
             for candidate in self.next_valve_candidates(agent) {
                 agent_options[idx].push((idx, candidate));
             }
+            agent_options[idx].sort_by_key(|(_, x)| u16::MAX - x.2);
         }
 
         let idle_agents = agent_options.iter().filter(|o| !o.is_empty()).count();
