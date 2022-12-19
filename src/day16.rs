@@ -79,8 +79,8 @@ type Pressure = u16;
 
 #[derive(Clone, Debug)]
 struct Volcano<'a> {
-    agents: Vec<Agent>,
-    opened: FxHashSet<String>,
+    agents: Vec<Agent<'a>>,
+    opened: FxHashSet<&'a str>,
     time_remaining: Time,
     pressure_released: Pressure,
     valves: &'a FxHashMap<String, Valve>,
@@ -89,7 +89,7 @@ struct Volcano<'a> {
 
 impl<'a> Volcano<'a> {
     fn new(
-        agents: Vec<Agent>,
+        agents: Vec<Agent<'a>>,
         time_remaining: Time,
         valves: &'a FxHashMap<String, Valve>,
         distances: &'a FxHashMap<(String, String), Time>,
@@ -121,7 +121,7 @@ impl<'a> Volcano<'a> {
             .valves
             .values()
             .filter_map(|v| {
-                if self.opened.contains(&v.name) {
+                if self.opened.contains(v.name.as_str()) {
                     None
                 } else {
                     Some(v.flow_rate * self.time_remaining as u16)
@@ -151,7 +151,7 @@ impl<'a> Volcano<'a> {
             {
                 let mut new_volcano = self.clone();
                 let this_agent = &mut new_volcano.agents[*idx];
-                this_agent.position = candidate.clone();
+                this_agent.position = candidate;
                 this_agent.busy_until = new_volcano.time_remaining - time_taken;
                 new_volcano.time_remaining = new_volcano
                     .agents
@@ -159,7 +159,7 @@ impl<'a> Volcano<'a> {
                     .map(|a| a.busy_until)
                     .max()
                     .unwrap_or_default();
-                new_volcano.opened.insert(candidate.clone());
+                new_volcano.opened.insert(candidate);
                 new_volcano.pressure_released += pressure_released;
                 new_volcano.pass_time(acc);
             }
@@ -172,9 +172,9 @@ impl<'a> Volcano<'a> {
                 let mut new_volcano = self.clone();
                 for (agent_idx, (next_valve, time_taken, pressure_released)) in options {
                     let this_agent = &mut new_volcano.agents[*agent_idx];
-                    this_agent.position = next_valve.clone();
+                    this_agent.position = next_valve;
                     this_agent.busy_until = new_volcano.time_remaining - time_taken;
-                    new_volcano.opened.insert(next_valve.clone());
+                    new_volcano.opened.insert(next_valve);
                     new_volcano.pressure_released += pressure_released;
                 }
                 new_volcano.time_remaining = new_volcano
@@ -195,11 +195,11 @@ impl<'a> Volcano<'a> {
         self.valves
             .values()
             .filter(|v| v.flow_rate > 0)
-            .filter(|v| !self.opened.contains(&v.name))
+            .filter(|v| !self.opened.contains(v.name.as_str()))
             .filter_map(|v| {
                 let time_required: Time = *self
                     .distances
-                    .get(&(agent.position.clone(), v.name.clone()))
+                    .get(&(agent.position.to_string(), v.name.to_string()))
                     .unwrap();
                 if time_required <= self.time_remaining {
                     Some((
@@ -216,15 +216,15 @@ impl<'a> Volcano<'a> {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
-struct Agent {
-    position: String,
+struct Agent<'a> {
+    position: &'a str,
     busy_until: Time,
 }
 
-impl Default for Agent {
+impl<'a> Default for Agent<'a> {
     fn default() -> Self {
         Self {
-            position: "AA".to_string(),
+            position: "AA",
             busy_until: 30,
         }
     }
