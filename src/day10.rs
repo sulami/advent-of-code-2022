@@ -3,7 +3,7 @@ use std::str::FromStr;
 pub fn solve() {
     let input = include_str!("../inputs/10.txt");
     println!("day 10-1: {}", part1(input));
-    println!("day 10-2: \n{}", part2(input));
+    print!("day 10-2:\n{}", part2(input));
 }
 
 fn part1(input: &str) -> i16 {
