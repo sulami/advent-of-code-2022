@@ -6,36 +6,14 @@ pub fn solve() {
     println!("day 20-2: {}", part2(input));
 }
 
-fn part1(input: &str) -> i16 {
-    let mut nums: Vec<(usize, i16)> = input
+fn part1(input: &str) -> i64 {
+    let mut nums: Vec<(usize, i64)> = input
         .lines()
         .map(|l| l.parse().expect("failed to parse file"))
         .enumerate()
         .collect();
 
-    for idx in 0..nums.len() {
-        let (current_index, (order, num)) = nums.iter().find_position(|(i, _)| *i == idx).unwrap();
-        // Copy values to avoid ownership issues.
-        let num = *num;
-        let order = *order;
-
-        // Just skip numbers that don't need to move.
-        if num == 0 {
-            continue;
-        }
-
-        nums.remove(current_index);
-
-        let raw_new_index = current_index as i16 + num;
-        let new_index: i16 = if num > 0 {
-            raw_new_index % nums.len() as i16
-        } else if raw_new_index < 0 {
-            nums.len() as i16 - (raw_new_index.abs() % nums.len() as i16)
-        } else {
-            raw_new_index
-        };
-        nums.insert(new_index as usize, (order, num));
-    }
+    mix(&mut nums);
 
     let zero_position = nums.iter().position(|(_, n)| *n == 0).unwrap();
     let a = nums[(zero_position + 1000) % nums.len()].1;
@@ -54,30 +32,7 @@ fn part2(input: &str) -> i64 {
         .collect();
 
     for _ in 0..10 {
-        for idx in 0..nums.len() {
-            let (current_index, (order, num)) =
-                nums.iter().find_position(|(i, _)| *i == idx).unwrap();
-            // Copy values to avoid ownership issues.
-            let num = *num;
-            let order = *order;
-
-            // Just skip numbers that don't need to move.
-            if num == 0 {
-                continue;
-            }
-
-            nums.remove(current_index);
-
-            let raw_new_index = current_index as i64 + num;
-            let new_index: i64 = if num > 0 {
-                raw_new_index % nums.len() as i64
-            } else if raw_new_index < 0 {
-                nums.len() as i64 - (raw_new_index.abs() % nums.len() as i64)
-            } else {
-                raw_new_index
-            };
-            nums.insert(new_index as usize, (order, num));
-        }
+        mix(&mut nums);
     }
 
     let zero_position = nums.iter().position(|(_, n)| *n == 0).unwrap();
@@ -85,6 +40,33 @@ fn part2(input: &str) -> i64 {
     let b = nums[(zero_position + 2000) % nums.len()].1;
     let c = nums[(zero_position + 3000) % nums.len()].1;
     a + b + c
+}
+
+/// Mixes nums once, according to the instructions.
+fn mix(nums: &mut Vec<(usize, i64)>) {
+    for idx in 0..nums.len() {
+        let (current_index, (order, num)) = nums.iter().find_position(|(i, _)| *i == idx).unwrap();
+        // Copy values to avoid ownership issues.
+        let num = *num;
+        let order = *order;
+
+        // Just skip numbers that don't need to move.
+        if num == 0 {
+            continue;
+        }
+
+        nums.remove(current_index);
+
+        let raw_new_index = current_index as i64 + num;
+        let new_index: i64 = if num > 0 {
+            raw_new_index % nums.len() as i64
+        } else if raw_new_index < 0 {
+            nums.len() as i64 - (raw_new_index.abs() % nums.len() as i64)
+        } else {
+            raw_new_index
+        };
+        nums.insert(new_index as usize, (order, num));
+    }
 }
 
 #[cfg(test)]
