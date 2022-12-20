@@ -32,15 +32,12 @@ fn part1(input: &str, row: i32) -> usize {
 
 fn part2(input: &str, limits: i32) -> i64 {
     let (sensors, beacons) = parse_sensors_and_beacons(input);
-    let candidates: FxHashSet<_> = sensors
+    let (x, y) = sensors
         .par_iter()
         .flat_map(|s| s.just_out_of_reach(limits, &sensors))
-        .collect();
-    let (x, y) = candidates
-        .difference(&beacons)
-        .next()
+        .find_any(|b| !beacons.contains(b))
         .expect("failed to find beacon");
-    *x as i64 * 4_000_000 + *y as i64
+    x as i64 * 4_000_000 + y as i64
 }
 
 fn parse_sensors_and_beacons(input: &str) -> (Vec<Sensor>, FxHashSet<(i32, i32)>) {
