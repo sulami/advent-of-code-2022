@@ -18,6 +18,7 @@ mod day17;
 mod day18;
 mod day20;
 mod day21;
+mod day22;
 
 fn main() {
     let start = std::time::Instant::now();
@@ -42,6 +43,7 @@ fn main() {
         day18::solve,
         day20::solve,
         day21::solve,
+        day22::solve,
     ] {
         let day_start = std::time::Instant::now();
         day();
