@@ -1,4 +1,4 @@
-use fxhash::FxHashMap;
+use fxhash::{FxHashMap, FxHashSet};
 use itertools::Itertools;
 
 pub fn solve() {
@@ -41,10 +41,13 @@ fn part1(input: &str) -> usize {
     for _ in 0..10 {
         // Tracks how many elves propose to go to a given tile.
         let mut proposal_counts: FxHashMap<Tile, usize> = FxHashMap::default();
+        // Create a hash set of elf positions for faster checking of
+        // neighbours.
+        let taken: FxHashSet<&Elf> = elves.iter().collect();
         // Gather proposals.
         let proposals: Vec<Option<Tile>> = elves
             .iter()
-            .map(|e| propose_move(e, &preferences, &elves, &mut proposal_counts))
+            .map(|e| propose_move(e, &preferences, &taken, &mut proposal_counts))
             .collect();
         // Execute proposed moves.
         elves
@@ -96,10 +99,13 @@ fn part2(input: &str) -> usize {
         i += 1;
         // Tracks how many elves propose to go to a given tile.
         let mut proposal_counts: FxHashMap<Tile, usize> = FxHashMap::default();
+        // Create a hash set of elf positions for faster checking of
+        // neighbours.
+        let taken: FxHashSet<&Elf> = elves.iter().collect();
         // Gather proposals.
         let proposals: Vec<Option<Tile>> = elves
             .iter()
-            .map(|e| propose_move(e, &preferences, &elves, &mut proposal_counts))
+            .map(|e| propose_move(e, &preferences, &taken, &mut proposal_counts))
             .collect();
         if proposals.iter().all(Option::is_none) {
             break;
@@ -138,22 +144,31 @@ fn execute_move(elf: &mut Elf, proposal: Option<Tile>, counts: &FxHashMap<Tile, 
 fn propose_move(
     elf: &Elf,
     preferences: &[([Tile; 3], Tile)],
-    elves: &[Elf],
+    elves: &FxHashSet<&Elf>,
     counts: &mut FxHashMap<Tile, usize>,
 ) -> Option<Tile> {
-    let neighbouring_elves: Vec<Tile> = elves
-        .iter()
-        .filter(|(x, y)| {
-            (*x != elf.0 || *y != elf.1) && x.abs_diff(elf.0) <= 1 && y.abs_diff(elf.1) <= 1
-        })
-        .copied()
-        .collect();
-    if neighbouring_elves.is_empty() {
+    let tile_free = |&(x, y)| !elves.contains(&(elf.0 + x, elf.1 + y));
+    let mut alone = true;
+    for neighbour in &[
+        (-1, -1),
+        (0, -1),
+        (1, -1),
+        (-1, 0),
+        (1, 0),
+        (-1, 1),
+        (0, 1),
+        (1, 1),
+    ] {
+        if !tile_free(neighbour) {
+            alone = false;
+            break;
+        }
+    }
+    if alone {
         return None;
     }
 
     let mut proposal = None;
-    let tile_free = |&(x, y)| !neighbouring_elves.contains(&(elf.0 + x, elf.1 + y));
 
     for ([a, b, c], (x, y)) in preferences {
         if tile_free(a) && tile_free(b) && tile_free(c) {
