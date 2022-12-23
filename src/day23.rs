@@ -8,22 +8,7 @@ pub fn solve() {
 }
 
 fn part1(input: &str) -> usize {
-    let mut elves: Vec<Elf> = input
-        .lines()
-        .enumerate()
-        .flat_map(|(linum, line)| {
-            line.chars()
-                .enumerate()
-                .filter_map(|(colnum, c)| {
-                    if c == '#' {
-                        Some((colnum as isize, linum as isize))
-                    } else {
-                        None
-                    }
-                })
-                .collect::<Vec<_>>()
-        })
-        .collect();
+    let mut elves = parse_elves(input);
 
     // Three relative coordinate pairs to check, and a relative
     // coordinate pair to propose if that check succeeds.
@@ -63,22 +48,7 @@ fn part1(input: &str) -> usize {
 }
 
 fn part2(input: &str) -> usize {
-    let mut elves: Vec<Elf> = input
-        .lines()
-        .enumerate()
-        .flat_map(|(linum, line)| {
-            line.chars()
-                .enumerate()
-                .filter_map(|(colnum, c)| {
-                    if c == '#' {
-                        Some((colnum as isize, linum as isize))
-                    } else {
-                        None
-                    }
-                })
-                .collect::<Vec<_>>()
-        })
-        .collect();
+    let mut elves = parse_elves(input);
 
     // Three relative coordinate pairs to check, and a relative
     // coordinate pair to propose if that check succeeds.
@@ -120,6 +90,25 @@ fn part2(input: &str) -> usize {
     }
 
     i
+}
+
+fn parse_elves(input: &str) -> Vec<Elf> {
+    input
+        .lines()
+        .enumerate()
+        .flat_map(|(linum, line)| {
+            line.chars()
+                .enumerate()
+                .filter_map(|(colnum, c)| {
+                    if c == '#' {
+                        Some((colnum as isize, linum as isize))
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<_>>()
+        })
+        .collect()
 }
 
 /// (x, y) coordinate pair, where x is right, and y is down. The
