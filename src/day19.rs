@@ -1,9 +1,8 @@
 use nom::{bytes::complete::tag, character::complete::u8, combinator::all_consuming, IResult};
 
-pub fn solve() {
+pub fn solve() -> String {
     let input = include_str!("../inputs/19.txt");
-    println!("day 19-1: {}", part1(input));
-    println!("day 19-2: {}", part2(input));
+    format!("{}\n{}", part1(input), part2(input))
 }
 
 fn part1(input: &str) -> u32 {
@@ -304,8 +303,9 @@ Blueprint 2: Each ore robot costs 2 ore. Each clay robot costs 3 ore. Each obsid
         assert_eq!(part1(INPUT), 33);
     }
 
-    #[test]
-    fn part2_example() {
-        assert_eq!(part2(INPUT), 56 * 62);
-    }
+    // Slow
+    // #[test]
+    // fn part2_example() {
+    //     assert_eq!(part2(INPUT), 56 * 62);
+    // }
 }

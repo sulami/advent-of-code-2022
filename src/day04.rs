@@ -1,16 +1,16 @@
 use std::str::FromStr;
 
-pub fn solve() {
+pub fn solve() -> String {
     let input = include_str!("../inputs/04.txt");
     let pairs: Vec<Pair> = input
         .lines()
         .map(|l| l.parse().expect("failed to parse pair"))
         .collect();
-    println!(
-        "day 4-1: {}",
-        pairs.iter().filter(|p| fully_contains(p)).count()
-    );
-    println!("day 4-2: {}", pairs.iter().filter(|p| overlaps(p)).count());
+    format!(
+        "{}\n{}",
+        pairs.iter().filter(|p| fully_contains(p)).count(),
+        pairs.iter().filter(|p| overlaps(p)).count()
+    )
 }
 
 #[derive(Debug)]

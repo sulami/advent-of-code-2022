@@ -3,9 +3,10 @@ use std::collections::BinaryHeap;
 
 use fxhash::FxHashSet;
 
-pub fn solve() {
+pub fn solve() -> String {
     let input = include_str!("../inputs/24.txt");
-    let _ = both_parts(input);
+    let (part1, part2) = both_parts(input);
+    format!("{part1}\n{part2}")
 }
 
 fn both_parts(input: &str) -> (usize, usize) {
@@ -36,7 +37,6 @@ fn both_parts(input: &str) -> (usize, usize) {
     }
 
     let part1 = trip;
-    println!("day 24-1: {}", trip);
 
     // Leg 2 - back
     let mut visited: FxHashSet<(usize, (usize, isize))> = FxHashSet::default();
@@ -84,7 +84,6 @@ fn both_parts(input: &str) -> (usize, usize) {
         }
     }
 
-    println!("day 24-2: {}", trip);
     (part1, trip)
 }
 

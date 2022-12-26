@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-pub fn solve() {
+pub fn solve() -> String {
     let input = include_str!("../inputs/05.txt");
     let stack_tops = |stacks: &Stacks| -> String {
         stacks
@@ -18,7 +18,7 @@ pub fn solve() {
         .map(|m| m.parse::<Move>().expect("failed to parse move"))
         .try_for_each(|m| execute_move_9000(&mut stacks, &m))
         .expect("failed to execute moves");
-    println!("day 5-1: {}", stack_tops(&stacks));
+    let part1 = stack_tops(&stacks);
 
     let (stacks, moves) = input.split_once("\n\n").expect("failed to split input");
     let mut stacks: Stacks = stacks.parse().expect("failed to parse stacks");
@@ -28,7 +28,7 @@ pub fn solve() {
         .map(|m| m.parse::<Move>().expect("failed to parse move"))
         .try_for_each(|m| execute_move_9001(&mut stacks, &m))
         .expect("failed to execute moves");
-    println!("day 5-2: {}", stack_tops(&stacks));
+    format!("{part1}\n{}", stack_tops(&stacks))
 }
 
 fn execute_move_9000(stacks: &mut Stacks, m: &Move) -> Result<(), &'static str> {

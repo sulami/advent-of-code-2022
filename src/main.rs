@@ -1,3 +1,5 @@
+use rayon::prelude::*;
+
 mod day01;
 mod day02;
 mod day03;
@@ -26,7 +28,7 @@ mod day25;
 
 fn main() {
     let start = std::time::Instant::now();
-    for day in [
+    let mut outputs = [
         day01::solve,
         day02::solve,
         day03::solve,
@@ -52,14 +54,20 @@ fn main() {
         day23::solve,
         day24::solve,
         day25::solve,
-    ] {
+    ]
+    .par_iter()
+    .enumerate()
+    .map(|(day, fun)| {
         let day_start = std::time::Instant::now();
-        day();
+        let mut output = format!("Day {}:\n{}", day + 1, fun());
         if !std::env::var("TIME").unwrap_or_default().is_empty() {
-            println!("{:?}", day_start.elapsed());
+            output = format!("{output}\ntook {:?}", day_start.elapsed());
         }
-    }
+        output
+    })
+    .collect::<Vec<String>>();
     if !std::env::var("TIME").unwrap_or_default().is_empty() {
-        println!("total: {:?}", start.elapsed());
+        outputs.push(format!("total: {:?}", start.elapsed()));
     }
+    outputs.iter().for_each(|o| println!("{o}"));
 }

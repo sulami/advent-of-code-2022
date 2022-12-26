@@ -8,10 +8,9 @@ use nom::{
     IResult,
 };
 
-pub fn solve() {
+pub fn solve() -> String {
     let input = include_str!("../inputs/21.txt");
-    println!("day 21-1: {}", part1(input));
-    println!("day 21-2: {}", part2(input));
+    format!("{}\n{}", part1(input), part2(input))
 }
 
 fn part1(input: &str) -> u64 {

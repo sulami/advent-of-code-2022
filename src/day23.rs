@@ -1,10 +1,9 @@
 use fxhash::{FxHashMap, FxHashSet};
 use itertools::Itertools;
 
-pub fn solve() {
+pub fn solve() -> String {
     let input = include_str!("../inputs/23.txt");
-    println!("day 23-1: {}", part1(input));
-    println!("day 23-2: {}", part2(input));
+    format!("{}\n{}", part1(input), part2(input))
 }
 
 fn part1(input: &str) -> usize {

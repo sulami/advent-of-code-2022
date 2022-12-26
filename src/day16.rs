@@ -12,11 +12,14 @@ use nom::{
 };
 use rayon::prelude::*;
 
-pub fn solve() {
+pub fn solve() -> String {
     let input = include_str!("../inputs/16.txt");
     let (valves, distances) = setup(input);
-    println!("day 16-1: {}", part1(&valves, &distances));
-    println!("day 16-2: {}", part2(&valves, &distances));
+    format!(
+        "{}\n{}",
+        part1(&valves, &distances),
+        part2(&valves, &distances)
+    )
 }
 
 fn part1(

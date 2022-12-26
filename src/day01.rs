@@ -1,7 +1,6 @@
-pub fn solve() {
+pub fn solve() -> String {
     let input = include_str!("../inputs/01.txt");
-    println!("day 1-1: {}", part1(input));
-    println!("day 1-2: {}", part2(input));
+    format!("{}\n{}", part1(input), part2(input))
 }
 
 fn part1(input: &str) -> u32 {

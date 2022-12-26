@@ -1,7 +1,6 @@
-pub fn solve() {
+pub fn solve() -> String {
     let input = include_str!("../inputs/02.txt");
-    println!("day 2-1: {}", part1(input));
-    println!("day 2-2: {}", part2(input));
+    format!("{}\n{}", part1(input), part2(input))
 }
 
 #[allow(clippy::identity_op)]

@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
-pub fn solve() {
+pub fn solve() -> String {
     let input = include_str!("../inputs/07.txt");
     let entries: Vec<Entry> = input
         .split("$ ")
@@ -23,7 +23,6 @@ pub fn solve() {
             }
         })
         .sum::<u32>();
-    println!("day 7-1: {}", part1);
 
     let required_space = 30_000_000 - (70_000_000 - directories[0].get_size());
     directories.sort_by_cached_key(|d| d.get_size());
@@ -32,7 +31,7 @@ pub fn solve() {
         .find(|d| d.get_size() >= required_space)
         .expect("no directory is large enough")
         .get_size();
-    println!("day 7-2: {}", part2);
+    format!("{part1}\n{part2}")
 }
 
 #[derive(Debug)]

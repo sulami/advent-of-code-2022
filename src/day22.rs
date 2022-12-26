@@ -6,9 +6,9 @@ use nom::{
     IResult,
 };
 
-pub fn solve() {
+pub fn solve() -> String {
     let input = include_str!("../inputs/22.txt");
-    println!("day 22-1: {}", part1(input));
+    format!("{}", part1(input))
 }
 
 fn part1(input: &str) -> usize {

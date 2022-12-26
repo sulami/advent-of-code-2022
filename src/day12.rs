@@ -5,10 +5,9 @@ use std::str::FromStr;
 
 use fxhash::FxHashSet;
 
-pub fn solve() {
+pub fn solve() -> String {
     let input = include_str!("../inputs/12.txt");
-    println!("day 12-1: {}", part1(input));
-    println!("day 12-2: {}", part2(input));
+    format!("{}\n{}", part1(input), part2(input))
 }
 
 fn part1(input: &str) -> usize {

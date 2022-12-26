@@ -1,6 +1,6 @@
 use fxhash::{FxHashMap, FxHashSet};
 
-pub fn solve() {
+pub fn solve() -> String {
     let input = include_str!("../inputs/03.txt");
     let rucksacks: Vec<&str> = input.lines().collect();
     let duplicates: Vec<char> = rucksacks
@@ -16,10 +16,6 @@ pub fn solve() {
     let priorities_map: FxHashMap<char, u32> = ('a'..='z').chain('A'..='Z').zip(1..).collect();
     let get_priority =
         |c: &char| -> &u32 { priorities_map.get(c).expect("unable to find priority") };
-    println!(
-        "day 3-1: {}",
-        duplicates.iter().map(get_priority).sum::<u32>()
-    );
 
     let badges: Vec<char> = rucksacks
         .chunks(3)
@@ -43,7 +39,11 @@ pub fn solve() {
         })
         .collect();
 
-    println!("day 3-2: {}", badges.iter().map(get_priority).sum::<u32>());
+    format!(
+        "{}\n{}",
+        duplicates.iter().map(get_priority).sum::<u32>(),
+        badges.iter().map(get_priority).sum::<u32>()
+    )
 }
 
 fn split_in_half(rs: &str) -> (&str, &str) {

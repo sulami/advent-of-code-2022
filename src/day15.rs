@@ -2,10 +2,9 @@ use fxhash::FxHashSet;
 use nom::{bytes::complete::tag, character::complete::i32, combinator::all_consuming, IResult};
 use rayon::prelude::*;
 
-pub fn solve() {
+pub fn solve() -> String {
     let input = include_str!("../inputs/15.txt");
-    println!("day 15-1: {}", part1(input, 2_000_000));
-    println!("day 15-2: {}", part2(input, 4_000_000));
+    format!("{}\n{}", part1(input, 2_000_000), part2(input, 4_000_000))
 }
 
 fn part1(input: &str, row: i32) -> usize {

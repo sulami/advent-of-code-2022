@@ -12,10 +12,9 @@ use nom::{
 /// but YMMV.
 const CAVE_DEPTH: usize = 255;
 
-pub fn solve() {
+pub fn solve() -> String {
     let input = include_str!("../inputs/14.txt");
-    println!("day 14-1: {}", part1(input));
-    println!("day 14-2: {}", part2(input));
+    format!("{}\n{}", part1(input), part2(input))
 }
 
 fn part1(input: &str) -> usize {
