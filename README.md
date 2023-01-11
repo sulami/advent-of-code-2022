@@ -3,6 +3,8 @@
 What it says on the tin. This year is in Rust, which I am enjoying
 very much.
 
+There is [a retrospective blog post](https://blog.sulami.xyz/posts/aoc-in-one-second/) about this project.
+
 I have some self-imposed rules and goals:
 
 1. I'm trying to minimise library use. I use `nom` in some places
